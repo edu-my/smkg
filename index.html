@@ -31,9 +31,11 @@
       --bg-l1: #05060a;
       --bg-l2: #07080b;
       --gridLine: rgba(255,255,255,.06);
+
+      --menuBg: rgba(8,10,14,.96);
+      --menuShadow: 0 32px 80px rgba(0,0,0,.6);
     }
 
-    /* Light theme overrides */
     html[data-theme="light"]{
       --bg0: #f6f7fb;
       --glass: rgba(255,255,255,.62);
@@ -51,16 +53,16 @@
       --bg-l1: #ffffff;
       --bg-l2: #f6f7fb;
       --gridLine: rgba(10,12,16,.08);
+      --menuBg: rgba(250,251,255,.97);
+      --menuShadow: 0 32px 80px rgba(10,12,16,.18);
     }
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial; background: var(--bg0); overflow:hidden; }
     
-    /* Vertical Container Structure */
     .main-container { height: 100vh; overflow: hidden; position: relative; touch-action: none; }
     .vertical-track { height: 200vh; transition: transform 1100ms var(--ease2); will-change: transform; }
 
-    /* Backgrounds */
     .bg{
       position: fixed; inset:0; z-index:0;
       background: radial-gradient(900px 600px at 18% 18%, var(--bg-r1), transparent 55%),
@@ -74,11 +76,11 @@
       background-size: 68px 68px; opacity: .08; pointer-events:none;
     }
 
-    /* Top nav */
+    /* ── TOP BAR ── */
     .topbar{
-      position: fixed; inset: 0 0 auto 0; height: var(--navH); z-index: 100;
+      position: fixed; inset: 0 0 auto 0; height: var(--navH); z-index: 200;
       display:flex; align-items:center; justify-content:space-between;
-      padding: 0 24px; backdrop-filter: blur(16px);
+      padding: 0 20px; backdrop-filter: blur(16px);
       background: var(--navBg); border-bottom: 1px solid var(--navBorder);
     }
     .brand{ display:flex; align-items:center; gap:10px; color: var(--text); font-weight: 820; letter-spacing:.2px; }
@@ -86,27 +88,127 @@
       width: 34px; height: 34px; border-radius: 12px; border: 1px solid var(--btnBorder);
       background: var(--btnBg); display:flex; align-items:center; justify-content:center;
     }
-    .navlinks{ display:flex; gap:10px; align-items: center; }
 
-  .navlinks a, .themeBtn{
-    padding: 8px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--btnBorder);
-    background: var(--btnBg);
-    color: var(--text);
-    font-size: 13px;
-    transition: 0.3s;
-    cursor: pointer;
-    text-decoration: none;
-  }
-    .navlinks a:hover,
-  .themeBtn:hover{
-    background: var(--btnBgHover);
-    transform: translateY(-2px);
-    box-shadow: var(--btnShadowHover);
-  }
+    /* Right-side controls: theme toggle + burger */
+    .nav-controls { display:flex; align-items:center; gap: 10px; }
 
-    /* Slider Styles */
+    /* Theme toggle pill */
+    .themeBtn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 13px; border-radius: 10px;
+      border: 1px solid var(--btnBorder); background: var(--btnBg);
+      color: var(--text); font-size: 12px; letter-spacing: .3px;
+      cursor: pointer; transition: background 0.25s, transform 0.25s, box-shadow 0.25s;
+      white-space: nowrap;
+    }
+    .themeBtn:hover { background: var(--btnBgHover); transform: translateY(-2px); box-shadow: var(--btnShadowHover); }
+    .themeBtn .icon { font-size: 14px; transition: transform 0.5s var(--ease2); }
+    .themeBtn:hover .icon { transform: rotate(30deg); }
+
+    /* Burger button */
+    .burgerBtn {
+      width: 44px; height: 44px; border-radius: 12px;
+      border: 1px solid var(--btnBorder); background: var(--btnBg);
+      cursor: pointer; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap: 5px;
+      transition: background 0.25s, transform 0.25s, box-shadow 0.25s;
+      position: relative; z-index: 310;
+    }
+    .burgerBtn:hover { background: var(--btnBgHover); transform: translateY(-2px); box-shadow: var(--btnShadowHover); }
+    .burgerBtn .bar1, .burgerBtn .bar2, .burgerBtn .bar3 {
+      display: block; width: 18px; height: 2px; border-radius: 2px;
+      background: var(--text); transition: transform 0.4s var(--ease2), opacity 0.3s, width 0.3s;
+      transform-origin: center;
+    }
+    /* Open state — animate to X */
+    .burgerBtn.open .bar1 { transform: translateY(7px) rotate(45deg); }
+    .burgerBtn.open .bar2 { opacity: 0; transform: scaleX(0); }
+    .burgerBtn.open .bar3 { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ── DROPDOWN MENU ── */
+    .dropMenu {
+      position: fixed;
+      top: var(--navH);
+      right: 0;
+      width: min(340px, 100vw);
+      background: var(--menuBg);
+      border-left: 1px solid var(--navBorder);
+      border-bottom: 1px solid var(--navBorder);
+      border-bottom-left-radius: 20px;
+      box-shadow: var(--menuShadow);
+      backdrop-filter: blur(24px);
+      z-index: 199;
+      padding: 12px;
+      display: flex; flex-direction: column; gap: 4px;
+      /* Hidden state */
+      clip-path: inset(0 0 100% 0 round 0 0 20px 20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: clip-path 0.45s var(--ease2), opacity 0.3s;
+    }
+    .dropMenu.open {
+      clip-path: inset(0 0 0% 0 round 0 0 20px 20px);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Staggered link animation */
+    .dropMenu a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 16px; border-radius: 12px;
+      border: 1px solid transparent;
+      color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500;
+      transition: background 0.2s, border-color 0.2s, transform 0.25s var(--ease2);
+      opacity: 0; transform: translateX(20px);
+    }
+    .dropMenu.open a {
+      opacity: 1; transform: translateX(0);
+    }
+    /* Stagger delays */
+    .dropMenu.open a:nth-child(1) { transition-delay: 0.05s; }
+    .dropMenu.open a:nth-child(2) { transition-delay: 0.10s; }
+    .dropMenu.open a:nth-child(3) { transition-delay: 0.15s; }
+    .dropMenu.open a:nth-child(4) { transition-delay: 0.20s; }
+    .dropMenu.open a:nth-child(5) { transition-delay: 0.25s; }
+    .dropMenu.open a:nth-child(6) { transition-delay: 0.30s; }
+
+    .dropMenu a:hover {
+      background: var(--btnBgHover);
+      border-color: var(--btnBorder);
+      transform: translateX(-4px);
+    }
+
+    /* Icon badge per menu item */
+    .dropMenu a .micon {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: var(--btnBg); border: 1px solid var(--btnBorder);
+      display:flex; align-items:center; justify-content:center;
+      font-size: 14px; flex-shrink: 0;
+      transition: transform 0.25s var(--ease2);
+    }
+    .dropMenu a:hover .micon { transform: scale(1.1); }
+
+    .dropMenu a .mlabel { display:flex; flex-direction:column; }
+    .dropMenu a .mname { font-size: 13.5px; font-weight: 600; color: var(--text); }
+    .dropMenu a .mdesc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    /* Divider */
+    .dropDivider {
+      height: 1px; background: var(--navBorder);
+      margin: 6px 4px;
+    }
+
+    /* Backdrop overlay */
+    .menuOverlay {
+      position: fixed; inset: 0; z-index: 198;
+      background: rgba(0,0,0,.3);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.35s;
+    }
+    .menuOverlay.open { opacity: 1; pointer-events: auto; }
+    html[data-theme="light"] .menuOverlay { background: rgba(10,12,16,.15); }
+
+    /* ── SLIDER ── */
     .section-1 { height: 100vh; position: relative; }
     .viewport{ position: relative; height: 100%; padding-top: var(--navH); overflow:hidden; }
     .track{ height: calc(100% - var(--navH)); display:flex; transition: transform var(--dur) var(--ease2); }
@@ -128,7 +230,7 @@
     .hl{ color: var(--text); text-decoration: underline color-mix(in srgb, var(--text) 30%, transparent); }
     .bullets{ margin: 15px 0 0; padding-left: 20px; color: var(--muted); line-height: 1.6; }
 
-    /* Section 2: Reveal Effect */
+    /* ── SECTION 2 ── */
     .section-2 { height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg-l1); position: relative; }
     .brand-statement { text-align: center; }
     .reveal-text {
@@ -141,7 +243,7 @@
     .section-2.active .reveal-text:nth-child(2) { transition-delay: 150ms; color: color-mix(in srgb, var(--text) 40%, transparent); }
     .section-2.active .reveal-text:nth-child(3) { transition-delay: 300ms; }
 
-    /* Navigation UI */
+    /* ── PILLS + CONTROLS ── */
     .pills{ position: fixed; left: 24px; bottom: 24px; z-index: 60; display:flex; gap:10px; transition: opacity 0.5s; }
     .pill{
       width: 10px; height: 10px; border-radius: 10px; background: color-mix(in srgb, var(--text) 20%, transparent);
@@ -158,16 +260,14 @@
       background: var(--btnBg); color: var(--text); cursor:pointer; backdrop-filter: blur(10px); font-size: 20px;
     }
 
-    /* Floating Hints */
+    /* ── HINTS ── */
     .scroll-hint, .gallery-hint {
       position: absolute; left: 50%; transform: translateX(-50%);
       color: var(--muted); font-size: 10px; letter-spacing: 3px;
-      text-transform: uppercase; text-decoration: none;
-      z-index: 10;
+      text-transform: uppercase; text-decoration: none; z-index: 10;
     }
     .scroll-hint { bottom: 30px; animation: bounceDown 2s infinite; }
     .gallery-hint { bottom: 40px; animation: bounceUp 2s infinite; }
-
     @keyframes bounceDown { 0%, 100% { transform: translate(-50%, 0); opacity: 0.3; } 50% { transform: translate(-50%, 10px); opacity: 1; } }
     @keyframes bounceUp { 0%, 100% { transform: translate(-50%, 0); opacity: 0.3; } 50% { transform: translate(-50%, -10px); opacity: 1; } }
 
@@ -180,7 +280,7 @@
   <div class="bg"><div class="grid"></div></div>
   <div class="pageTrans" id="pageTrans"></div>
 
-    <header class="topbar">
+  <header class="topbar">
     <div class="brand">
       <div class="mark">◆</div>
       <div>
@@ -188,19 +288,54 @@
         <div class="sub">Showcase • Dashboard</div>
       </div>
     </div>
-  
-<nav class="navlinks">
-  <a href="akademik.html" data-trans="true">Kurikulum</a>
-  <a href="#" data-trans="true">HEM</a>
-  <a href="#" data-trans="true">Ko-Kurikulum</a>
-  <a href="#" data-trans="true">Tingkatan 6</a>
-  <a href="#" data-trans="true">PPKI</a>
-  <a href="#" data-trans="true">Kaunseling</a>
-  <button class="themeBtn" id="themeToggle">
-    <span id="themeIcon">☾</span> <span id="themeLabel">Dark</span>
-  </button>
-</nav>
+
+    <div class="nav-controls">
+      <!-- Theme toggle (left of burger) -->
+      <button class="themeBtn" id="themeToggle" aria-label="Toggle theme">
+        <span class="icon" id="themeIcon">☾</span>
+        <span id="themeLabel">Dark</span>
+      </button>
+
+      <!-- Burger -->
+      <button class="burgerBtn" id="burgerBtn" aria-label="Open menu" aria-expanded="false">
+        <span class="bar1"></span>
+        <span class="bar2"></span>
+        <span class="bar3"></span>
+      </button>
+    </div>
   </header>
+
+  <!-- Backdrop -->
+  <div class="menuOverlay" id="menuOverlay"></div>
+
+  <!-- Dropdown menu -->
+  <nav class="dropMenu" id="dropMenu" aria-hidden="true">
+    <a href="akademik.html" data-trans="true">
+      <span class="micon">📚</span>
+      <span class="mlabel"><span class="mname">Kurikulum</span><span class="mdesc">Akademik &amp; Silibus</span></span>
+    </a>
+    <a href="#" data-trans="true">
+      <span class="micon">🏫</span>
+      <span class="mlabel"><span class="mname">HEM</span><span class="mdesc">Hal Ehwal Murid</span></span>
+    </a>
+    <a href="#" data-trans="true">
+      <span class="micon">🏆</span>
+      <span class="mlabel"><span class="mname">Ko-Kurikulum</span><span class="mdesc">Aktiviti &amp; Persatuan</span></span>
+    </a>
+    <div class="dropDivider"></div>
+    <a href="#" data-trans="true">
+      <span class="micon">📖</span>
+      <span class="mlabel"><span class="mname">Tingkatan 6</span><span class="mdesc">Program Pra-U</span></span>
+    </a>
+    <a href="#" data-trans="true">
+      <span class="micon">♿</span>
+      <span class="mlabel"><span class="mname">PPKI</span><span class="mdesc">Program Pendidikan Khas</span></span>
+    </a>
+    <a href="#" data-trans="true">
+      <span class="micon">💬</span>
+      <span class="mlabel"><span class="mname">Kaunseling</span><span class="mdesc">Bimbingan &amp; Kerjaya</span></span>
+    </a>
+  </nav>
 
   <div class="main-container">
     <div class="vertical-track" id="verticalTrack">
@@ -208,7 +343,6 @@
         <main class="viewport"><section class="track" id="track"></section></main>
         <div class="scroll-hint">Scroll Down</div>
       </section>
-
       <section class="section-2" id="section2">
         <div class="brand-statement">
           <span class="reveal-text">SMKG</span>
@@ -259,7 +393,7 @@
           track = document.getElementById('track'), pills = document.getElementById('pills'),
           uiControls = document.getElementById('ui-controls'), pageTrans = document.getElementById('pageTrans');
 
-    // Theme Logic
+    // ── Theme ──
     (function initTheme(){
       const root = document.documentElement, btn = document.getElementById("themeToggle"),
             ico = document.getElementById("themeIcon"), lbl = document.getElementById("themeLabel");
@@ -273,6 +407,34 @@
       setTheme(localStorage.getItem("smkg_theme") || "dark");
     })();
 
+    // ── Burger Menu ──
+    const burgerBtn = document.getElementById('burgerBtn');
+    const dropMenu  = document.getElementById('dropMenu');
+    const overlay   = document.getElementById('menuOverlay');
+
+    function openMenu() {
+      burgerBtn.classList.add('open');
+      dropMenu.classList.add('open');
+      overlay.classList.add('open');
+      burgerBtn.setAttribute('aria-expanded', 'true');
+      dropMenu.setAttribute('aria-hidden', 'false');
+    }
+    function closeMenu() {
+      burgerBtn.classList.remove('open');
+      dropMenu.classList.remove('open');
+      overlay.classList.remove('open');
+      burgerBtn.setAttribute('aria-expanded', 'false');
+      dropMenu.setAttribute('aria-hidden', 'true');
+    }
+    function toggleMenu() {
+      dropMenu.classList.contains('open') ? closeMenu() : openMenu();
+    }
+
+    burgerBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(); });
+    overlay.addEventListener('click', closeMenu);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+
+    // ── Slider ──
     function renderSlider() {
       track.innerHTML = ""; pills.innerHTML = "";
       SLIDES.forEach((s, i) => {
@@ -324,10 +486,12 @@
     window.addEventListener('wheel', e => goToSection(e.deltaY > 0 ? 1 : 0));
     document.getElementById('next').onclick = () => { slideIdx = (slideIdx + 1) % SLIDES.length; updateSlider(); restartAuto(); };
     document.getElementById('prev').onclick = () => { slideIdx = (slideIdx - 1 + SLIDES.length) % SLIDES.length; updateSlider(); restartAuto(); };
-    
+
+    // Page transitions (close menu first)
     document.querySelectorAll('a[data-trans="true"]').forEach(a => {
       a.onclick = (e) => {
         e.preventDefault();
+        closeMenu();
         pageTrans.classList.add("run");
         setTimeout(() => { window.location.href = a.href; }, 520);
       };
