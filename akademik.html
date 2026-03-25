@@ -1,0 +1,1211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pengurusan Akademik</title>
+
+  <style>
+    :root{
+      --bg: #07080b;
+      --glass: rgba(12,14,18,.55);
+      --border: rgba(255,255,255,.14);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.72);
+      --ease: cubic-bezier(.16,1,.3,1);
+      --shadow: 0 22px 65px rgba(0,0,0,.55);
+      --r: 22px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background: var(--bg);
+      color: #fff;
+      overflow:hidden;
+    }
+
+    /* ===== Background image ===== */
+    .bg{
+      position: fixed; inset:0; z-index:0;
+      ground:
+        linear-gradient(to bottom, rgba(0,0,0,.62), rgba(0,0,0,.68)),
+        url("https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=2200&q=60");
+      ground-size: cover;
+      ground-position: center;
+      filter: saturate(1.02) contrast(1.02);
+      transform: scale(1.02);
+    }
+
+    /* ===== Morph canvas (SVG blobs) ===== */
+    .morphWrap{
+      position: fixed; inset:0; z-index: 1;
+      pointer-events:none;
+      opacity:.95;
+      mix-blend-mode: screen;
+    }
+    svg{ width:100%; height:100%; display:block; }
+
+    /* ===== Top bar ===== */
+    .topbar{
+      position: fixed; left:0; right:0; top:0;
+      height: 64px;
+      z-index: 10;
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 0 14px;
+      drop-filter: blur(16px);
+      ground: rgba(10,12,16,.55);
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center;
+      font-weight: 820;
+      letter-spacing:.2px;
+      user-select:none;
+    }
+    .mark{
+      width: 34px; height:34px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      ground: radial-gradient(circle at 30% 25%, rgba(255,255,255,.20), rgba(255,255,255,.05) 60%, rgba(255,255,255,.02));
+      display:flex; align-items:center; justify-content:center;
+    }
+    .nav a{
+      display:inline-flex;
+      padding: 9px 11px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      ground: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.90);
+      text-decoration:none;
+      transition: transform 220ms var(--ease), ground 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .nav a:hover{
+      transform: translateY(-2px);
+      ground: rgba(255,255,255,.10);
+      box-shadow: 0 16px 36px rgba(0,0,0,.22);
+    }
+
+    /* ===== Stage ===== */
+    .stage{
+      position: relative;
+      z-index: 5;
+      height: 100%;
+      padding-top: 64px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    /* ===== Layout ===== */
+    .cardShell{
+      width: min(1040px, 100%);
+      display:grid;
+      grid-template-columns: 380px 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .tile{
+      border-radius: var(--r);
+      border: 1px solid rgba(255,255,255,.14);
+      ground: rgba(12,14,18,.40);
+      drop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    /* left tile */
+    .launcher{
+      padding: 18px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      transform: translateY(10px);
+      opacity: 0;
+      animation: riseIn 720ms var(--ease) forwards;
+    }
+    @keyframes riseIn{ to{ transform: translateY(0); opacity:1; } }
+
+    .kicker{
+      font-size: 12px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.70);
+    }
+    .title{
+      margin: 8px 0 10px;
+      font-size: 34px;
+      line-height: 1.06;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .desc{
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    /* right panel */
+    .panel{
+      position: relative;
+      padding: 18px;
+      overflow:hidden;
+      transform: translateY(10px);
+      opacity: 0;
+      animation: riseIn 720ms var(--ease) forwards;
+      animation-delay: 120ms;
+    }
+
+    .panelContent{
+      position: relative;
+      z-index: 2;
+      padding-top: 0;
+      max-width: 70ch;
+    }
+
+    .panelHeadRow{
+      display:flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .panelH{
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.01em;
+    }
+
+    /* UX badge */
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      ground: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.88);
+      font-size: 12px;
+      font-weight: 780;
+      letter-spacing: .01em;
+      user-select:none;
+      box-shadow: 0 14px 34px rgba(0,0,0,.14);
+      white-space: nowrap;
+    }
+    .badgeDot{
+      width: 8px; height: 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.18);
+      opacity: .95;
+    }
+
+    .panelP{
+      margin: 0 0 12px;
+      color: rgba(255,255,255,.74);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    /* ===== 6 Panel Cards Grid (RIGHT PANEL) ===== */
+    .panelGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .pCard{
+      position: relative;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      padding: 14px 14px 12px;
+      cursor: pointer;
+      overflow:hidden;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), box-shadow 220ms var(--ease);
+      box-shadow: 0 14px 40px rgba(0,0,0,.18);
+    }
+
+    .pCard:hover{
+      transform: translateY(-3px);
+      background: rgba(255,255,255,.10);
+      box-shadow: 0 18px 55px rgba(0,0,0,.28);
+    }
+
+    .pTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+
+    .pTitle{
+      margin: 0;
+      font-size: 14px;
+      font-weight: 850;
+      letter-spacing: .02em;
+      color: rgba(255,255,255,.92);
+    }
+
+    .pSub{
+      margin: 8px 0 0;
+      font-size: 12px;
+      line-height: 1.5;
+      color: rgba(255,255,255,.70);
+    }
+
+    .pIco{
+      width: 34px;
+      height: 34px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.16), rgba(255,255,255,.05) 60%, rgba(255,255,255,.02));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 14px;
+      opacity: .95;
+    }
+
+    .pCard::after{
+      content:"";
+      position:absolute;
+      inset:-40% -40%;
+      background: radial-gradient(260px 120px at 20% 20%, rgba(255,255,255,.10), transparent 60%);
+      transform: rotate(12deg);
+      opacity: .85;
+      pointer-events:none;
+    }
+
+    /* ===== LEFT: Bidang accordion + mini glass pill buttons ===== */
+    .bidangWrap{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .bidang{
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      border-radius: 18px;
+      overflow:hidden;
+    }
+
+    .bHeadBtn{
+      width: 100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 12px 12px;
+      cursor:pointer;
+
+      border: 0;
+      background: transparent;
+      color: rgba(255,255,255,.92);
+      text-align:left;
+
+      font-weight: 850;
+      font-size: 13px;
+      letter-spacing: .02em;
+
+      transition: background 220ms var(--ease);
+    }
+    .bHeadBtn:hover{
+      background: rgba(255,255,255,.06);
+    }
+
+    .bArrow{
+      width: 34px; height: 34px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: 14px;
+      opacity: .95;
+      transform: rotate(0deg);
+      transition: transform 260ms var(--ease);
+      flex: 0 0 auto;
+    }
+
+    .bidang.open .bArrow{
+      transform: rotate(180deg);
+    }
+
+    .bBody{
+      max-height: 0px;
+      overflow:hidden;
+      transition: max-height 320ms var(--ease);
+      padding: 0 12px;
+    }
+
+    .bidang.open .bBody{
+      padding: 0 12px 12px;
+    }
+
+    /* one pill per row */
+    .pillRow{
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      padding-top: 8px;
+    }
+
+    .pill{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      width: 100%;
+      justify-content:flex-start;
+
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.88);
+      text-decoration:none;
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .01em;
+
+      transition: transform 220ms var(--ease), background 220ms var(--ease), box-shadow 220ms var(--ease), outline-color 220ms var(--ease);
+      box-shadow: 0 14px 34px rgba(0,0,0,.14);
+      user-select:none;
+      outline: 1px solid transparent;
+    }
+
+    .pill:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.10);
+      box-shadow: 0 18px 45px rgba(0,0,0,.22);
+    }
+
+    .pillDot{
+      width: 8px; height: 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.16);
+      opacity: .95;
+      flex: 0 0 auto;
+    }
+
+    .pill.isActive{
+      background: rgba(255,255,255,.11);
+      outline-color: rgba(255,255,255,.22);
+    }
+
+    @media (max-width: 900px){
+      .cardShell{ grid-template-columns: 1fr; }
+      .panelGrid{ grid-template-columns: 1fr; }
+      html,body{ overflow:auto; }
+      .stage{ height:auto; padding-bottom: 24px; }
+    }
+
+    .foot{
+      position: fixed;
+      left: 14px;
+      bottom: 12px;
+      z-index: 8;
+      font-size: 12px;
+      color: rgba(255,255,255,.55);
+      user-select:none;
+    }
+
+    /* tiny toast */
+    .toast{
+      position: fixed;
+      left: 14px;
+      top: 78px;
+      z-index: 20;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(12,14,18,.55);
+      backdrop-filter: blur(16px);
+      color: rgba(255,255,255,.86);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      box-shadow: 0 18px 55px rgba(0,0,0,.28);
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events:none;
+      transition: opacity 260ms var(--ease), transform 260ms var(--ease);
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* =========================================================
+       THEME TOGGLE (ADDED) - light mode overrides only
+       ========================================================= */
+    .nav{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+    }
+
+    /* make the toggle button look identical to the Back pill */
+    .nav .themeBtn{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 9px 11px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.90);
+      cursor:pointer;
+      transition: transform 220ms var(--ease), background 220ms var(--ease), box-shadow 220ms var(--ease);
+      font: inherit;
+      line-height: 1;
+    }
+    .nav .themeBtn:hover{
+      transform: translateY(-2px);
+      background: rgba(255,255,255,.10);
+      box-shadow: 0 16px 36px rgba(0,0,0,.22);
+    }
+
+    /* LIGHT THEME: keep layout/animations intact, only recolor */
+    body.light{
+      background: #f6f7fb;
+      color: #0b1220;
+    }
+    body.light .bg{
+      background:
+        linear-gradient(to bottom, rgba(255,255,255,.72), rgba(255,255,255,.76)),
+        url("https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=2200&q=60");
+      filter: saturate(1.02) contrast(1.02);
+    }
+    body.light .morphWrap{
+      mix-blend-mode: multiply;
+      opacity: .78;
+    }
+    body.light .topbar{
+      background: rgba(246,247,251,.72);
+      border-bottom: 1px solid rgba(11,18,32,.12);
+    }
+    body.light .brand > div:last-child > div:first-child{
+      color: rgba(11,18,32,.92);
+    }
+    body.light .mark{
+      border: 1px solid rgba(11,18,32,.14);
+      background: radial-gradient(circle at 30% 25%, rgba(11,18,32,.10), rgba(11,18,32,.03) 60%, rgba(11,18,32,.01));
+      color: rgba(11,18,32,.86);
+    }
+
+    body.light .nav a,
+    body.light .nav .themeBtn{
+      border: 1px solid rgba(11,18,32,.14);
+      background: rgba(11,18,32,.06);
+      color: rgba(11,18,32,.88);
+    }
+    body.light .nav a:hover,
+    body.light .nav .themeBtn:hover{
+      background: rgba(11,18,32,.10);
+      box-shadow: 0 16px 36px rgba(11,18,32,.12);
+    }
+
+    body.light .tile{
+      border: 1px solid rgba(11,18,32,.14);
+      background: rgba(255,255,255,.55);
+      box-shadow: 0 22px 65px rgba(11,18,32,.12);
+    }
+
+    body.light .kicker{ color: rgba(11,18,32,.62); }
+    body.light .title{ color: rgba(11,18,32,.92); }
+    body.light .desc{ color: rgba(11,18,32,.70); }
+
+    body.light .badge{
+      border: 1px solid rgba(11,18,32,.14);
+      background: rgba(11,18,32,.06);
+      color: rgba(11,18,32,.88);
+      box-shadow: 0 14px 34px rgba(11,18,32,.10);
+    }
+    body.light .badgeDot{
+      border: 1px solid rgba(11,18,32,.18);
+      background: rgba(11,18,32,.18);
+    }
+    body.light .panelP{ color: rgba(11,18,32,.72); }
+
+    body.light .pCard{
+      border: 1px solid rgba(11,18,32,.14);
+      background: rgba(11,18,32,.05);
+      box-shadow: 0 14px 40px rgba(11,18,32,.10);
+    }
+    body.light .pCard:hover{
+      background: rgba(11,18,32,.08);
+      box-shadow: 0 18px 55px rgba(11,18,32,.14);
+    }
+    body.light .pTitle{ color: rgba(11,18,32,.92); }
+    body.light .pSub{ color: rgba(11,18,32,.70); }
+    body.light .pIco{
+      border: 1px solid rgba(11,18,32,.14);
+      background: radial-gradient(circle at 30% 25%, rgba(11,18,32,.10), rgba(11,18,32,.03) 60%, rgba(11,18,32,.01));
+    }
+    body.light .pCard::after{
+      background: radial-gradient(260px 120px at 20% 20%, rgba(11,18,32,.08), transparent 60%);
+      opacity: .65;
+    }
+
+    body.light .bidang{
+      border: 1px solid rgba(11,18,32,.14);
+      background: rgba(11,18,32,.04);
+    }
+    body.light .bHeadBtn{ color: rgba(11,18,32,.92); }
+    body.light .bHeadBtn:hover{ background: rgba(11,18,32,.06); }
+    body.light .bArrow{
+      border: 1px solid rgba(11,18,32,.14);
+      background: rgba(11,18,32,.05);
+    }
+
+    body.light .pill{
+      border: 1px solid rgba(11,18,32,.14);
+      background: rgba(11,18,32,.06);
+      color: rgba(11,18,32,.88);
+      box-shadow: 0 14px 34px rgba(11,18,32,.10);
+    }
+    body.light .pill:hover{
+      background: rgba(11,18,32,.10);
+      box-shadow: 0 18px 45px rgba(11,18,32,.12);
+    }
+    body.light .pillDot{
+      border: 1px solid rgba(11,18,32,.18);
+      background: rgba(11,18,32,.16);
+    }
+    body.light .pill.isActive{
+      background: rgba(11,18,32,.11);
+      outline-color: rgba(11,18,32,.22);
+    }
+
+    body.light .foot{ color: rgba(11,18,32,.62); }
+
+    body.light .toast{
+      border: 1px solid rgba(11,18,32,.14);
+      background: rgba(246,247,251,.80);
+      color: rgba(11,18,32,.86);
+      box-shadow: 0 18px 55px rgba(11,18,32,.14);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg"></div>
+
+  <!-- SVG morph overlay -->
+  <div class="morphWrap" aria-hidden="true">
+    <svg viewBox="0 0 1000 600" preserveAspectRatio="none">
+      <path id="blob1" fill="rgba(255,255,255,0.10)"></path>
+      <path id="blob2" fill="rgba(255,255,255,0.06)"></path>
+    </svg>
+  </div>
+
+  <div class="toast" id="toast">Selected</div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">◆</div>
+      <div>
+        <div>Schools</div>
+        <div style="font-size:10px; color:rgba(255,255,255,.62); font-weight:350;">Group Access Portal</div>
+      </div>
+    </div>
+    <div class="nav">
+      <!-- ADDED: theme toggle button -->
+      <button class="themeBtn" id="themeToggle" type="button" aria-label="Toggle theme">☀ Light</button>
+      <a href="https://smk-gunsanad.github.io/smkg/index.html">Back</a>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="cardShell">
+
+      <!-- LEFT -->
+      <div class="tile launcher">
+        <div>
+          <div class="kicker">SCHOOLS MODULE</div>
+          <div class="title" id="scrambleTitle">Group Access Portal</div>
+
+          <div class="desc">
+            <div class="bidangWrap" id="bidangWrap">
+
+              <!-- Bidang Bahasa -->
+              <div class="bidang">
+                <button class="bHeadBtn" type="button">
+                  <span>Bidang Bahasa</span>
+                  <span class="bArrow">⌄</span>
+                </button>
+                <div class="bBody">
+                  <div class="pillRow">
+                    <a class="pill" href="#" data-subject="bm"><span class="pillDot"></span>Bahasa Melayu</a>
+                    <a class="pill" href="#" data-subject="bi"><span class="pillDot"></span>Bahasa Inggeris</a>
+                    <a class="pill" href="#" data-subject="ba"><span class="pillDot"></span>Bahasa Arab</a>
+                    <a class="pill" href="#" data-subject="km"><span class="pillDot"></span>Kesusteraan Melayu</a>
+                    <a class="pill" href="#" data-subject="bkd"><span class="pillDot"></span>BKD</a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bidang Sains Matematik -->
+              <div class="bidang">
+                <button class="bHeadBtn" type="button">
+                  <span>Bidang Sains Matematik</span>
+                  <span class="bArrow">⌄</span>
+                </button>
+                <div class="bBody">
+                  <div class="pillRow">
+                    <a class="pill" href="#" data-subject="mt"><span class="pillDot"></span>Matematik</a>
+                    <a class="pill" href="#" data-subject="sc"><span class="pillDot"></span>Sains</a>
+                    <a class="pill" href="#" data-subject="bio"><span class="pillDot"></span>Biologi</a>
+                    <a class="pill" href="#" data-subject="fiz"><span class="pillDot"></span>Fizik</a>
+                    <a class="pill" href="#" data-subject="kim"><span class="pillDot"></span>Kimia</a>
+                    <a class="pill" href="#" data-subject="mt2"><span class="pillDot"></span>Matematik Tambahan</a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bidang Sains Sosial -->
+              <div class="bidang">
+                <button class="bHeadBtn" type="button">
+                  <span>Bidang Sains Sosial</span>
+                  <span class="bArrow">⌄</span>
+                </button>
+                <div class="bBody">
+                  <div class="pillRow">
+                    <a class="pill" href="#" data-subject="sej"><span class="pillDot"></span>Sejarah</a>
+                    <a class="pill" href="#" data-subject="geo"><span class="pillDot"></span>Geografi</a>
+                    <a class="pill" href="#" data-subject="pai"><span class="pillDot"></span>Pendidikan Islam</a>
+                    <a class="pill" href="#" data-subject="pm"><span class="pillDot"></span>Pendidikan Moral</a>
+                    <a class="pill" href="#" data-subject="psv"><span class="pillDot"></span>Pendidikan Seni Visual</a>
+                    <a class="pill" href="#" data-subject="pjpk"><span class="pillDot"></span>PJPK</a>
+                    <a class="pill" href="#" data-subject="ss"><span class="pillDot"></span>Sains Sukan</a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TVET -->
+              <div class="bidang">
+                <button class="bHeadBtn" type="button">
+                  <span>TVET</span>
+                  <span class="bArrow">⌄</span>
+                </button>
+                <div class="bBody">
+                  <div class="pillRow">
+                    <a class="pill" href="#" data-subject="prt"><span class="pillDot"></span>Pertanian</a>
+                    <a class="pill" href="#" data-subject="per"><span class="pillDot"></span>Perniagaan</a>
+                    <a class="pill" href="#" data-subject="eko"><span class="pillDot"></span>Ekonomi</a>
+                    <a class="pill" href="#" data-subject="ak"><span class="pillDot"></span>Asas Kelestarian</a>
+                    <a class="pill" href="#" data-subject="kdp"><span class="pillDot"></span>Katering dan Penyajian</a>
+                    <a class="pill" href="#" data-subject="ldn"><span class="pillDot"></span>Landskap dan Nursery</a>
+                    <a class="pill" href="#" data-subject="rbt"><span class="pillDot"></span>RBT</a>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="tile panel" id="panel">
+        <div class="panelContent">
+
+          <div class="panelHeadRow">
+            <h2 class="panelH" id="dashTitle">Schools Dashboard</h2>
+            <div class="badge" id="subjectBadge" title="Current selection">
+              <span class="badgeDot"></span>
+              <span id="badgeText">Bahasa Melayu</span>
+            </div>
+          </div>
+
+          <p class="panelP" id="dashDesc">
+            Pilih modul di bawah untuk akses fail, rujukan atau ringkasan dashboard.
+          </p>
+
+          <div class="panelGrid">
+            <div class="pCard" data-module="pengurusan">
+              <div class="pTop">
+                <h3 class="pTitle">Pengurusan Am</h3>
+                <div class="pIco">🏛️</div>
+              </div>
+              <p class="pSub">Dokumen asas, borang, SOP dan rujukan harian.</p>
+            </div>
+
+            <div class="pCard" data-module="pekeliling">
+              <div class="pTop">
+                <h3 class="pTitle">Pekeliling</h3>
+                <div class="pIco">📌</div>
+              </div>
+              <p class="pSub">Surat pekeliling, arahan rasmi & garis panduan.</p>
+            </div>
+
+            <div class="pCard" data-module="mesyuarat">
+              <div class="pTop">
+                <h3 class="pTitle">Mesyuarat</h3>
+                <div class="pIco">🗓️</div>
+              </div>
+              <p class="pSub">Minit, agenda, tindakan susulan & rekod keputusan.</p>
+            </div>
+
+            <div class="pCard" data-module="pentaksiran">
+              <div class="pTop">
+                <h3 class="pTitle">Pentaksiran</h3>
+                <div class="pIco">📝</div>
+              </div>
+              <p class="pSub">Ujian, analisis, PBD, SPM/STPM & eviden.</p>
+            </div>
+
+            <div class="pCard" data-module="perancangan">
+              <div class="pTop">
+                <h3 class="pTitle">Perancangan Strategik</h3>
+                <div class="pIco">🎯</div>
+              </div>
+              <p class="pSub">Pelan tindakan, KPI, timeline & pemantauan.</p>
+            </div>
+
+            <div class="pCard" data-module="kewangan">
+              <div class="pTop">
+                <h3 class="pTitle">Kewangan</h3>
+                <div class="pIco">💳</div>
+              </div>
+              <p class="pSub">Bajet, perolehan, laporan & rekod kewangan.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <div class="foot">Tip: Select a subject (left), then choose a module (right).</div>
+
+  <script>
+    /*****************************************************************
+     * THEME TOGGLE (ADDED)
+     *****************************************************************/
+    (function initThemeToggle(){
+      const btn = document.getElementById("themeToggle");
+      if (!btn) return;
+
+      const KEY = "school_theme";
+      const saved = localStorage.getItem(KEY); // "light" | "dark" | null
+      const isLight = saved === "light";
+
+      if (isLight) document.body.classList.add("light");
+
+      function syncBtn(){
+        const light = document.body.classList.contains("light");
+        btn.textContent = light ? "🌙 Dark" : "☀ Light";
+        btn.setAttribute("aria-pressed", light ? "true" : "false");
+      }
+
+      syncBtn();
+
+      btn.addEventListener("click", () => {
+        document.body.classList.toggle("light");
+        const lightNow = document.body.classList.contains("light");
+        localStorage.setItem(KEY, lightNow ? "light" : "dark");
+        syncBtn();
+      });
+    })();
+
+    /*****************************************************************
+     * 1) SVG PATH MORPH (PURE JS)
+     *****************************************************************/
+    const B1_A = "M 120 340 C 140 220 220 140 340 150 C 460 160 520 90 640 120 C 760 150 880 250 850 360 C 820 470 700 520 590 500 C 480 480 420 560 300 520 C 180 480 100 460 120 340 Z";
+    const B1_B = "M 160 320 C 110 210 250 120 360 170 C 470 220 520 80 650 140 C 780 200 900 250 830 390 C 770 510 690 500 570 470 C 450 440 420 560 290 520 C 160 480 210 420 160 320 Z";
+
+    const B2_A = "M 650 120 C 760 70 890 120 900 220 C 910 320 820 350 760 410 C 700 470 650 520 560 500 C 470 480 450 410 480 330 C 510 250 540 170 650 120 Z";
+    const B2_B = "M 610 140 C 720 60 900 90 910 230 C 920 370 820 360 770 430 C 720 500 650 540 560 500 C 470 460 430 410 460 320 C 490 230 500 190 610 140 Z";
+
+    const blob1 = document.getElementById("blob1");
+    const blob2 = document.getElementById("blob2");
+
+    function tokenizePath(d){
+      const parts = d.match(/[a-zA-Z]|-?\d*\.?\d+/g) || [];
+      const nums = [];
+      parts.forEach(p => { if (/^-?\d*\.?\d+$/.test(p)) nums.push(parseFloat(p)); });
+      return { parts, nums };
+    }
+
+    function interpPath(fromD, toD, t){
+      const A = tokenizePath(fromD);
+      const B = tokenizePath(toD);
+      if (A.nums.length !== B.nums.length) return fromD;
+
+      const out = [];
+      let ni = 0;
+      for (const p of A.parts){
+        if (/^-?\d*\.?\d+$/.test(p)) {
+          const v = A.nums[ni] + (B.nums[ni] - A.nums[ni]) * t;
+          out.push(String(Math.round(v * 100) / 100));
+          ni++;
+        } else out.push(p);
+      }
+      return out.join(" ");
+    }
+
+    const easeInOut = (t) => (t < 0.5) ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+
+    function morphLoop(el, A, B, ms){
+      let dir = 1;
+      let start = performance.now();
+      function step(now){
+        const p = Math.min(1, (now - start) / ms);
+        const tt = easeInOut(p);
+        el.setAttribute("d", dir === 1 ? interpPath(A,B,tt) : interpPath(B,A,tt));
+        if (p >= 1){ dir *= -1; start = performance.now(); }
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    blob1.setAttribute("d", B1_A);
+    blob2.setAttribute("d", B2_A);
+    morphLoop(blob1, B1_A, B1_B, 5200);
+    morphLoop(blob2, B2_A, B2_B, 6800);
+
+
+
+    /*****************************************************************
+     * 3) Accordion: ONLY ONE open at a time
+     *****************************************************************/
+    const bidangBoxes = Array.from(document.querySelectorAll(".bidang"));
+
+    function setMaxHeight(box, open){
+      const body = box.querySelector(".bBody");
+      if (!body) return;
+      body.style.maxHeight = open ? (body.scrollHeight + "px") : "0px";
+    }
+
+    bidangBoxes.forEach(box => setMaxHeight(box, false));
+
+    bidangBoxes.forEach(box => {
+      const btn = box.querySelector(".bHeadBtn");
+      btn.addEventListener("click", () => {
+        const willOpen = !box.classList.contains("open");
+
+        bidangBoxes.forEach(b => {
+          b.classList.remove("open");
+          setMaxHeight(b, false);
+        });
+
+        if (willOpen){
+          box.classList.add("open");
+          setMaxHeight(box, true);
+        }
+      });
+    });
+
+    /*****************************************************************
+     * 4) Dynamic Links: subject (left) -> module (right) -> URL
+     *****************************************************************/
+    let currentSubject = "bm"; // default
+
+    const SUBJECT_LABEL = {
+      bm: "Bahasa Melayu",
+      bi: "Bahasa Inggeris",
+      ba: "Bahasa Arab",
+      km: "Kesusteraan Melayu",
+      bkd: "BKD",
+      mt: "Matematik",
+      sc: "Sains",
+      bio: "Biologi",
+      fiz: "Fizik",
+      kim: "Kimia",
+      mt2: "Matematik Tambahan",
+      sej: "Sejarah",
+      geo: "Geografi",
+      pai: "Pendidikan Agama Islam",
+      pm: "Pendidikan Moral",
+      psv: "Pendidikan Seni Visual",
+      pjpk: "PJPK",
+      ss: "Sains Sukan",
+      prt: "Pertanian",
+      per: "Perniagaan",
+      eko: "Ekonomi",
+      ak: "Asas Kelestarian",
+      ldn: "Landskap dan Nursery",
+      rbt: "RBT",
+    };
+
+    // Replace these placeholder URLs with your real Google Drive folder/file links.
+    const LINKS = {
+      bm: {
+        pengurusan: "https://drive.google.com/drive/folders/1_mfA8XdLD-jNh9iAY-TQI8cVX4Cb1c2r?usp=sharing",
+        pekeliling: "https://drive.google.com/drive/folders/103iYyYK_NDMH4vlD7EMk9KwhTfLD_Obp?usp=sharing",
+        mesyuarat: "https://drive.google.com/drive/folders/1cu6yTjH0dr2xYDzLe65aGhJxMhHhRtRH?usp=sharing",
+        pentaksiran: "https://drive.google.com/drive/folders/1QUKk5DTCA2ndC-zj1Td9Ez7ssBQffRD0?usp=sharing",
+        perancangan: "https://drive.google.com/drive/folders/19AwsEnKQlmcjwFmolZWPD6BxEiz-s99d?usp=sharing",
+        kewangan: "https://drive.google.com/drive/folders/19AwsEnKQlmcjwFmolZWPD6BxEiz-s99d?usp=sharing",
+      },
+      bi: {
+        pengurusan: "https://drive.google.com/drive/folders/1Jrzf9XJkqUuITL6uqj85z_IjDKV9LHJR?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1EBQ6Nv86eNIwu_icHrNo-Yex0RTFVMel?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1XR-HA_oAuI8or8ugF4klvc5ebN2-JJdy?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1MjaF8yTgDCViCoAYDdkA3xV-_ez2HITC?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1ixR7lbf0Y_5XEFhl4jhy0Eh4ioY5w0AJ?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1ChosK1WBFnxj7SPL4Gz6_ZDj8Ap6P-Bp?usp=drive_link",
+      },
+      ba: {
+        pengurusan: "https://drive.google.com/drive/folders/1JOgzqG1g0-p2vjfhW5bsej9FWOBnW0h9?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1AcYNdagBZ3hcNF86LorS9zFMQrdLJZJD?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1EXBic7wE77d6B39vAV5TCOCc6x0vo2hL?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1Ns8lr2lSoKLsih6ghzvG-PGkm1cwL0gd?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1BQm8Dp-Z51eeB-KZn1KOlcMXJi1zPV1X?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1_5USgbdVxFs1kYx3JhXF4isgKMhQz4OC?usp=drive_link",
+      },
+      km: {
+        pengurusan: "https://drive.google.com/drive/folders/1t20DcE4jbZy_pxcCtmD9yL2KVYqFl3tV?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1jI3wDyqS6JDzGOZDKSsZdn44n9eyq663?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1ApIJltOXhWFY417iWnR8ZsgIwLpCkhew?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1xBPqe8QbnIpZz0cSVmv2iplHNiSb5WJt?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1FzcU2SsNaEe-fQ_lmHnTpwfL44cLf4iF?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1hrHY1dR1es2jYS1JZhfr9PZjZI_NY24t?usp=drive_link",
+      },
+      bkd: {
+        pengurusan: "https://drive.google.com/drive/folders/1kS4aapz5aNwRTghC5NhFsyWMxvfna2Xx?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/19pWW5GhLez80Lh2Ae6Ov42s8M9kMguRg?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1hUUuUFf6a7fIVL-Xpp4bKi2msIVmia_c?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1KIubcnvTDVMaGCeK8GqhBUUwPfTmnVmc?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1OxP_448r4ROCwhC5o27ISoaHQ5InQqAf?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1NGupwPHBMc4HYHIVrGkq-Bfv9Hty2s4w?usp=drive_link",
+      },
+      mt: {
+        pengurusan: "https://drive.google.com/drive/folders/1TnRcgg2BFhUDJc54gVardi1pWRJfhUfQ?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1X66O0AUonabuhDDp1yQarw8LBrpMCdtE?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1D7JaE3sIeE6wTYWsz0QLH9BGPo3I2-MX?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1KUa7BwV9NoNuR0BmrguNE4b-aZE3rB1W?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1qEOq9vH9NgwLqvOFyzTGXn-afph1jMOH?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1NQHWVW1vgd_wdA06O-n_bWWXqtREe7jo?usp=drive_link",
+      },
+      sc: {
+        pengurusan: "https://drive.google.com/drive/folders/1z8QO3kvXUalvxdaM3TF1t_QGVsiv9Kx3?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1zq3ZOMBd2YhMidwehJ6q_8pe2glnTSQT?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1Rr6AT-BUy1jNgjOOuxxIl4T63ZA-8taw?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1mrIJRKPLFZqM5BXJwr-waOWo8TO_Tv1W?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1RQdUJgHP9PoOHlA052TQphgyzHhi87KM?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/15YQj6-QyGGsuFQ8BFNDCl6pb37Qfh2p3?usp=drive_link",
+      },
+      bio: {
+        pengurusan: "https://drive.google.com/drive/folders/1eNksELZJK-_5wEFr1CLOKW4tBo5iRkUH?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1pEBv7ic4XYta4wvrvXpixrjzXjbgjsfa?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1vOhVPkBYGsr_S3bv53iJwcX8NNEbSJ3G?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1U0J0o7yjmmOcvSqMNfoxFza-mPeumHEH?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1RlB4JqERbNShD5kz9Y0THXnBRehIX0XA?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1lx1J9c0EGxeMvz8E1q-TISgtkrcg4J2O?usp=drive_link",
+      },
+      fiz: {
+        pengurusan: "https://drive.google.com/drive/folders/18Icqi_gFyJAc7wsLU7KP7IDlYoLt_wb8?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1ohYLXQwP5GMic_QaJMHn1WZnYu2oPBCO?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1XJClmeOARQzo9WL_L99Eg6N-drV6vrP5?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1ilX-Webh6UHqRDTM-2BhKreg2ghHrk-m?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1zBvw2he5LjLZZT_eGVxPh0tT5wPKaCG0?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/15ITYRv0AmbnnuVg7t9bEaBcBe4hFKrrK?usp=drive_link",
+      },
+      kim: {
+        pengurusan: "https://drive.google.com/drive/folders/1pvmBEmbnQpYgzVgfFEGPmF2uOHDtOjbS?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1YKc73pL3n_OWET4SJ5VqzBAqwjVOuPbZ?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1PvR6ZO1Ri76uC5otosHCvt7jZ4vKo7yt?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/10Pmrh5iAWuQV7mwAnnYojZihpZvxqNQA?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1XdMEjZsBfNr9fGwHYjs-m5EoRm4OSBz-?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/14k34mwkrXiIBh8uix6cRmP7uIAT-V4R-?usp=drive_link",
+      },
+      mt2: {
+        pengurusan: "https://drive.google.com/drive/folders/1Ny7tO0fhq78T8SaFo7vx13xEVrx05aBF?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1RtS0I1q4llwF-QR51ZZV8pRvgjQNxIAy?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1f1i3Z0PGJEHdRbcoSXOjlWtDLpqfsjwB?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1FaZfiFNcRiZb8ikVgMdyll_RDslMD3HZ?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/19zsEm-5DrCPzIOyx_z5yVSy0eQiIsyNG?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1xyFJEP7fAectz62pPdXemyx6I0tZZen7?usp=drive_link",
+      },
+      sej: {
+        pengurusan: "https://drive.google.com/drive/folders/1KTel9kiZDhe0ouCdivVazxoHt7MC9poW?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1pVURiDmgkBJau5DK0vm9EPkYXJP5x8ji?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1EBEpOm0Ob-QteA0OwOig_FJMP4Jk8dfK?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1Y-W7MmpU3cZnwuY1razNwYDb1_MSDcPb?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1_HE6H7NcxP5LmTyzUcX_j6sRnZbTCR70?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1hBSMFD6TH5mqxwdjWjKIgRHSry7QQ2Wl?usp=drive_link",
+      },
+      geo: {
+        pengurusan: "https://drive.google.com/drive/folders/17f0dewjc-0eqg0VxyjdYz9GI0_uE0lk-?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1u_lTAWcBaaaFYtpddOLu4bFlROlp2ari?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1BXXHZNU4DOLg2Tf-qSh8zT1UlQRKIVqj?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1UbiWlTd9FkaCgD8X2pL8Ist6_p_kDnY3?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/162UVv1rfHfd794jT_aiJXTMmbwR4raLq?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1gH5FokfV1BzNmX0q0Lrn2mjlLtwldwPE?usp=drive_link",
+      },
+      pai: {
+        pengurusan: "https://drive.google.com/drive/folders/12LMEF7c4YCDYhdGR4ehrO50BzfoQPiKc?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1t4HB22JzxXvIgvbGGdNJJsd6wsOLmXAj?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1MdQSyZomeDOjskYepTeb_hiJQpmZIWbH?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1vPOCsrnziJH_IoV3XlC7xY4Er4d7JY5L?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1lG_eF6yGQ-oOdg964XnLTBWw49Gw_fNO?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1N-jq63AukTbwwyo3rfc3Cy97EunR1aiG?usp=drive_link",
+      },
+      pm: {
+        pengurusan: "https://drive.google.com/drive/folders/15QI9KmpF4GcATxmZ9l-K7oObMOV39Ce2?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1APwoDhf5k3bkS-DJJyuZwaaGOYjavmTI?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1V1lVscIZcoDD5iBlGyRiYmSaWTdpYaZ5?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/108Bsqo4U25cjXkRgM_N9wpwlQ2KkxbaB?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1VpcTDnQ-W16D6sy1Q1W_22j2JYT5vjuW?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1h8Nnm6xRI9w0pXp1yAbCU-uWEcDb4vcN?usp=drive_link",
+      },
+      psv: {
+        pengurusan: "https://drive.google.com/drive/folders/1FzhRwZlg6W_oSkzp5gkHPfehZ8mKR-2-?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1galR46m5FPfB9N4fU2jTFsA51Old-xLa?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1C5ME9dujyawSo3Y-iPNAfi4rk8mm9_Wf?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1KVTBQVcnVtSgLlrBFSekvo_49XGjJ6Q_?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1HU4x52CiLPMDT6bkWdlRcfPEG0Q1QNcY?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1Czq2w2491N7jpAlkhDXsacKZqaOnOwqa?usp=drive_link",
+      },
+      pjpk: {
+        pengurusan: "https://drive.google.com/drive/folders/13npKMymjni_PdXKcea0vPdCqrpr441Ww?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1Dt-Tz1MK-DntW67sazPdvmREJZwwWBYW?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1EN3Ua0TH4DSBhKpjqb3TE5sIKjcD67Ns?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/12RhN87702DFqBwEnOJV_RRMzccuq5syS?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/13KZmpFYYHNXqOHmxrfK-pepkqMDPaOSJ?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/15IzUjI88DXRaThDRiX--zdkjjB0DDF0-?usp=drive_link",
+      },
+      ss: {
+        pengurusan: "https://drive.google.com/drive/folders/1jdj_uZ83RGZiKTwm-FCOc9MPDsI206qc?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1Q7Vj5q0unWY9EljkRFw5ukgVbURPkA_8?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1ICuqkMkdh5gtAgWHZUesRSqVxlAWIVky?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1G8LC1nKOOc7mZwcdRmEBe7Epzr32nMTa?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/10aLrVw5Xrpi4WoB3sJxBlsYq4lGqkesW?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/16pNyRBWCbggWbSGolFMyESxvVi3UnUmr?usp=drive_link",
+      },
+      prt: {
+        pengurusan: "https://drive.google.com/drive/folders/1oMNIBSvSA4G_9aVRffcaNPbq0wN-9Skd?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/17pArf7jJ6BxYyJ97NvjghdGvIMKE1TH7?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1RV129OOnUsf78HfOeDVvoF3B9ZfB_SBj?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1sGPfZOh5lwYP4Nmh6PVOuv0f2g8KntbB?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1iPRoPJthj7stdKPOaWpS_SW6PNR1K94X?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1H-ka9gQdyRWjq0D3_WawHsxhDjvd3Ede?usp=drive_link",
+      },
+      per: {
+        pengurusan: "https://drive.google.com/drive/folders/1nrJaevWG1vQwrj9O0-2Lod2POwDp9MG2?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1o0sjwn_JWz2vjiQO1jy7CDSHZURQhcvg?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1D0fAozAO1y5AViyskuSj_drGFjUpQAaf?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1mIavIjJHfWH4sBohUcfBJ41LBJV3qviz?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1cL1KTh4v6lt1KCeR3RLdeBInB61rBD3E?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1pQKxckJ0EF5BU338mbNzeBfDXnkzyIKk?usp=drive_link",
+      },
+      eko: {
+        pengurusan: "https://drive.google.com/drive/folders/15a4j0XLrNB7jKQEjEPoZ-aBIrRpPMW8v?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1Xr7XP0FFg6ofmt-6whLZ__Yhj7WqD8pr?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1TdQ8pM43ZvAAKvEMcRD-jqxsZr4jKRqI?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1rHBdMODnpqIdnA6Au2XDC2RNDp45Q30b?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1hhlUK1T0yxwSa-o44Yf1kx_LrnKJrVe9?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1FZLV9t4trHAW7d9UlSG7aK0DNxY-rAFd?usp=drive_link",
+      },
+      ak: {
+        pengurusan: "https://drive.google.com/drive/folders/1Qgb9chYHZsHS4DLQJq6iycF1xRaNG93m?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1671Y09-A6SBSeChkGT6Egq1srVvrtHHe?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/17iKpnjhhhpXLy9hgWLVonVnIzti-MzXX?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/15c-wySf5MjmP70PndJjJjnzZ9QpsU6eH?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1V3ZGoPitTFJrx_NydqkD1eAaz7N2SHJ4?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1VLIuebq2RRxmsbPSG0avRZKloBh-6e8Q?usp=drive_link",
+      },
+      kdp: {
+        pengurusan: "https://drive.google.com/drive/folders/1lC38AB3IPs7q62g5kubqLDe_qqsFIAWs?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1M5QqjexIOOTBdenkwUqaBJretaGYJHed?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1WW1xhJ6ieXempqFPCA1wvvjASFg4ni9V?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/1tP6cLsktVenCuz-W3JhdFOZ7abdomjHT?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1s--f45yr4qwVIQ2Mqo9YvmLNs1iD8DgZ?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1he5kMSEk0WXs4wUXjAzB0iKfGSacNbrh?usp=drive_link",
+      },
+      ldn: {
+        pengurusan: "https://drive.google.com/drive/folders/1hgegolySyLJLf1fpVIA4PRgjaT4KcVY4?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1HdTE7kDGkaxnEkq-A274YJIMZ66Wpy3Y?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/17VXQGhLokFqp5eRmJLCQmsgZtZLjLIrT?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/15WOVVRA_zUiXtSMqvw252ocxpLe5l4I3?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/1gJaRQF_g4ua-Hpm-w2cAGvqPDs6xhD4n?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/14-v_YHvcPhafXS71rWHxv0a9LUvmKo8F?usp=drive_link",
+      },
+      rbt: {
+        pengurusan: "https://drive.google.com/drive/folders/11TZNYnBXLa192tT3lcpoosVggZ3qOMyL?usp=drive_link",
+        pekeliling: "https://drive.google.com/drive/folders/1XWPsFmg5iNTW18mDgll-nIIUoA_47MK_?usp=drive_link",
+        mesyuarat: "https://drive.google.com/drive/folders/1ahR7br4b3ttcvuTCJkwAeiQFOJggvmGZ?usp=drive_link",
+        pentaksiran: "https://drive.google.com/drive/folders/14tlHFpWc_cYCvHCq8mTtTF54nOEYsC4P?usp=drive_link",
+        perancangan: "https://drive.google.com/drive/folders/171pm2x3EYAyixXr3g2HTuenl8cz4k0Yr?usp=drive_link",
+        kewangan: "https://drive.google.com/drive/folders/1rOWshS-ZmWmbSZElL7t5bZ3ZtQsnC9q2?usp=drive_link",
+      },
+    };
+    
+    const badgeText = document.getElementById("badgeText");
+    const dashTitle = document.getElementById("dashTitle");
+    const toast = document.getElementById("toast");
+
+    let toastTimer = null;
+
+    function showToast(msg){
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 900);
+    }
+
+    function setSelectedSubjectUI(key){
+      document.querySelectorAll('.pill[data-subject]').forEach(a => {
+        a.classList.remove("isActive");
+      });
+      const active = document.querySelector(`.pill[data-subject="${key}"]`);
+      if (active) active.classList.add("isActive");
+    }
+
+    function setSubject(key){
+      currentSubject = key;
+      const label = SUBJECT_LABEL[key] || key;
+      badgeText.textContent = label;
+      dashTitle.textContent = "Schools Dashboard";
+      setSelectedSubjectUI(key);
+      showToast("Selected: " + label);
+    }
+
+    // LEFT: choose subject
+    document.querySelectorAll('.pill[data-subject]').forEach(a => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const key = a.getAttribute("data-subject");
+        if (!key) return;
+        setSubject(key);
+      });
+    });
+
+    // default highlight only (do NOT auto-open any bidang)
+    setSubject(currentSubject);
+    // all bidang already set to closed by: bidangBoxes.forEach(box => setMaxHeight(box, false));
+
+
+    // RIGHT: open module link based on currentSubject
+    document.querySelectorAll(".pCard[data-module]").forEach(card => {
+      card.addEventListener("click", () => {
+        const mod = card.getAttribute("data-module");
+        const url = LINKS?.[currentSubject]?.[mod];
+
+        if (!url){
+          showToast("No link set for: " + (SUBJECT_LABEL[currentSubject] || currentSubject));
+          return;
+        }
+
+        window.open(url, "DRIVE_PORTAL", "noopener");
+      });
+    });
+  </script>
+</body>
+</html>
