@@ -1,1211 +1,515 @@
 <!doctype html>
-<html lang="en">
+<html lang="ms" data-theme="dark">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Pengurusan Akademik</title>
-
-  <style>
-    :root{
-      --bg: #07080b;
-      --glass: rgba(12,14,18,.55);
-      --border: rgba(255,255,255,.14);
-      --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.72);
-      --ease: cubic-bezier(.16,1,.3,1);
-      --shadow: 0 22px 65px rgba(0,0,0,.55);
-      --r: 22px;
-    }
-
-    *{ box-sizing:border-box; }
-    html,body{
-      height:100%;
-      margin:0;
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      background: var(--bg);
-      color: #fff;
-      overflow:hidden;
-    }
-
-    /* ===== Background image ===== */
-    .bg{
-      position: fixed; inset:0; z-index:0;
-      ground:
-        linear-gradient(to bottom, rgba(0,0,0,.62), rgba(0,0,0,.68)),
-        url("https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=2200&q=60");
-      ground-size: cover;
-      ground-position: center;
-      filter: saturate(1.02) contrast(1.02);
-      transform: scale(1.02);
-    }
-
-    /* ===== Morph canvas (SVG blobs) ===== */
-    .morphWrap{
-      position: fixed; inset:0; z-index: 1;
-      pointer-events:none;
-      opacity:.95;
-      mix-blend-mode: screen;
-    }
-    svg{ width:100%; height:100%; display:block; }
-
-    /* ===== Top bar ===== */
-    .topbar{
-      position: fixed; left:0; right:0; top:0;
-      height: 64px;
-      z-index: 10;
-      display:flex; align-items:center; justify-content:space-between;
-      padding: 0 14px;
-      drop-filter: blur(16px);
-      ground: rgba(10,12,16,.55);
-      border-bottom: 1px solid rgba(255,255,255,.12);
-    }
-    .brand{
-      display:flex; gap:10px; align-items:center;
-      font-weight: 820;
-      letter-spacing:.2px;
-      user-select:none;
-    }
-    .mark{
-      width: 34px; height:34px; border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.14);
-      ground: radial-gradient(circle at 30% 25%, rgba(255,255,255,.20), rgba(255,255,255,.05) 60%, rgba(255,255,255,.02));
-      display:flex; align-items:center; justify-content:center;
-    }
-    .nav a{
-      display:inline-flex;
-      padding: 9px 11px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.14);
-      ground: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.90);
-      text-decoration:none;
-      transition: transform 220ms var(--ease), ground 220ms var(--ease), box-shadow 220ms var(--ease);
-    }
-    .nav a:hover{
-      transform: translateY(-2px);
-      ground: rgba(255,255,255,.10);
-      box-shadow: 0 16px 36px rgba(0,0,0,.22);
-    }
-
-    /* ===== Stage ===== */
-    .stage{
-      position: relative;
-      z-index: 5;
-      height: 100%;
-      padding-top: 64px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding-left: 14px;
-      padding-right: 14px;
-    }
-
-    /* ===== Layout ===== */
-    .cardShell{
-      width: min(1040px, 100%);
-      display:grid;
-      grid-template-columns: 380px 1fr;
-      gap: 14px;
-      align-items: stretch;
-    }
-
-    .tile{
-      border-radius: var(--r);
-      border: 1px solid rgba(255,255,255,.14);
-      ground: rgba(12,14,18,.40);
-      drop-filter: blur(18px);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-
-    /* left tile */
-    .launcher{
-      padding: 18px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      transform: translateY(10px);
-      opacity: 0;
-      animation: riseIn 720ms var(--ease) forwards;
-    }
-    @keyframes riseIn{ to{ transform: translateY(0); opacity:1; } }
-
-    .kicker{
-      font-size: 12px;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,.70);
-    }
-    .title{
-      margin: 8px 0 10px;
-      font-size: 34px;
-      line-height: 1.06;
-      letter-spacing: -0.02em;
-      color: var(--text);
-    }
-    .desc{
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.55;
-      font-size: 15px;
-    }
-
-    /* right panel */
-    .panel{
-      position: relative;
-      padding: 18px;
-      overflow:hidden;
-      transform: translateY(10px);
-      opacity: 0;
-      animation: riseIn 720ms var(--ease) forwards;
-      animation-delay: 120ms;
-    }
-
-    .panelContent{
-      position: relative;
-      z-index: 2;
-      padding-top: 0;
-      max-width: 70ch;
-    }
-
-    .panelHeadRow{
-      display:flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
-
-    .panelH{
-      margin: 0;
-      font-size: 28px;
-      letter-spacing: -0.01em;
-    }
-
-    /* UX badge */
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.14);
-      ground: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.88);
-      font-size: 12px;
-      font-weight: 780;
-      letter-spacing: .01em;
-      user-select:none;
-      box-shadow: 0 14px 34px rgba(0,0,0,.14);
-      white-space: nowrap;
-    }
-    .badgeDot{
-      width: 8px; height: 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.18);
-      opacity: .95;
-    }
-
-    .panelP{
-      margin: 0 0 12px;
-      color: rgba(255,255,255,.74);
-      line-height: 1.6;
-      font-size: 15px;
-    }
-
-    /* ===== 6 Panel Cards Grid (RIGHT PANEL) ===== */
-    .panelGrid{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 12px;
-    }
-
-    .pCard{
-      position: relative;
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      padding: 14px 14px 12px;
-      cursor: pointer;
-      overflow:hidden;
-      transition: transform 220ms var(--ease), background 220ms var(--ease), box-shadow 220ms var(--ease);
-      box-shadow: 0 14px 40px rgba(0,0,0,.18);
-    }
-
-    .pCard:hover{
-      transform: translateY(-3px);
-      background: rgba(255,255,255,.10);
-      box-shadow: 0 18px 55px rgba(0,0,0,.28);
-    }
-
-    .pTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-    }
-
-    .pTitle{
-      margin: 0;
-      font-size: 14px;
-      font-weight: 850;
-      letter-spacing: .02em;
-      color: rgba(255,255,255,.92);
-    }
-
-    .pSub{
-      margin: 8px 0 0;
-      font-size: 12px;
-      line-height: 1.5;
-      color: rgba(255,255,255,.70);
-    }
-
-    .pIco{
-      width: 34px;
-      height: 34px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.16), rgba(255,255,255,.05) 60%, rgba(255,255,255,.02));
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size: 14px;
-      opacity: .95;
-    }
-
-    .pCard::after{
-      content:"";
-      position:absolute;
-      inset:-40% -40%;
-      background: radial-gradient(260px 120px at 20% 20%, rgba(255,255,255,.10), transparent 60%);
-      transform: rotate(12deg);
-      opacity: .85;
-      pointer-events:none;
-    }
-
-    /* ===== LEFT: Bidang accordion + mini glass pill buttons ===== */
-    .bidangWrap{
-      display:flex;
-      flex-direction:column;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .bidang{
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.05);
-      border-radius: 18px;
-      overflow:hidden;
-    }
-
-    .bHeadBtn{
-      width: 100%;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding: 12px 12px;
-      cursor:pointer;
-
-      border: 0;
-      background: transparent;
-      color: rgba(255,255,255,.92);
-      text-align:left;
-
-      font-weight: 850;
-      font-size: 13px;
-      letter-spacing: .02em;
-
-      transition: background 220ms var(--ease);
-    }
-    .bHeadBtn:hover{
-      background: rgba(255,255,255,.06);
-    }
-
-    .bArrow{
-      width: 34px; height: 34px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.05);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size: 14px;
-      opacity: .95;
-      transform: rotate(0deg);
-      transition: transform 260ms var(--ease);
-      flex: 0 0 auto;
-    }
-
-    .bidang.open .bArrow{
-      transform: rotate(180deg);
-    }
-
-    .bBody{
-      max-height: 0px;
-      overflow:hidden;
-      transition: max-height 320ms var(--ease);
-      padding: 0 12px;
-    }
-
-    .bidang.open .bBody{
-      padding: 0 12px 12px;
-    }
-
-    /* one pill per row */
-    .pillRow{
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
-      padding-top: 8px;
-    }
-
-    .pill{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      width: 100%;
-      justify-content:flex-start;
-
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.88);
-      text-decoration:none;
-      font-size: 12px;
-      font-weight: 750;
-      letter-spacing: .01em;
-
-      transition: transform 220ms var(--ease), background 220ms var(--ease), box-shadow 220ms var(--ease), outline-color 220ms var(--ease);
-      box-shadow: 0 14px 34px rgba(0,0,0,.14);
-      user-select:none;
-      outline: 1px solid transparent;
-    }
-
-    .pill:hover{
-      transform: translateY(-2px);
-      background: rgba(255,255,255,.10);
-      box-shadow: 0 18px 45px rgba(0,0,0,.22);
-    }
-
-    .pillDot{
-      width: 8px; height: 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.16);
-      opacity: .95;
-      flex: 0 0 auto;
-    }
-
-    .pill.isActive{
-      background: rgba(255,255,255,.11);
-      outline-color: rgba(255,255,255,.22);
-    }
-
-    @media (max-width: 900px){
-      .cardShell{ grid-template-columns: 1fr; }
-      .panelGrid{ grid-template-columns: 1fr; }
-      html,body{ overflow:auto; }
-      .stage{ height:auto; padding-bottom: 24px; }
-    }
-
-    .foot{
-      position: fixed;
-      left: 14px;
-      bottom: 12px;
-      z-index: 8;
-      font-size: 12px;
-      color: rgba(255,255,255,.55);
-      user-select:none;
-    }
-
-    /* tiny toast */
-    .toast{
-      position: fixed;
-      left: 14px;
-      top: 78px;
-      z-index: 20;
-      padding: 10px 12px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(12,14,18,.55);
-      backdrop-filter: blur(16px);
-      color: rgba(255,255,255,.86);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: .01em;
-      box-shadow: 0 18px 55px rgba(0,0,0,.28);
-      opacity: 0;
-      transform: translateY(-8px);
-      pointer-events:none;
-      transition: opacity 260ms var(--ease), transform 260ms var(--ease);
-    }
-    .toast.show{
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* =========================================================
-       THEME TOGGLE (ADDED) - light mode overrides only
-       ========================================================= */
-    .nav{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-    }
-
-    /* make the toggle button look identical to the Back pill */
-    .nav .themeBtn{
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      padding: 9px 11px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.90);
-      cursor:pointer;
-      transition: transform 220ms var(--ease), background 220ms var(--ease), box-shadow 220ms var(--ease);
-      font: inherit;
-      line-height: 1;
-    }
-    .nav .themeBtn:hover{
-      transform: translateY(-2px);
-      background: rgba(255,255,255,.10);
-      box-shadow: 0 16px 36px rgba(0,0,0,.22);
-    }
-
-    /* LIGHT THEME: keep layout/animations intact, only recolor */
-    body.light{
-      background: #f6f7fb;
-      color: #0b1220;
-    }
-    body.light .bg{
-      background:
-        linear-gradient(to bottom, rgba(255,255,255,.72), rgba(255,255,255,.76)),
-        url("https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=2200&q=60");
-      filter: saturate(1.02) contrast(1.02);
-    }
-    body.light .morphWrap{
-      mix-blend-mode: multiply;
-      opacity: .78;
-    }
-    body.light .topbar{
-      background: rgba(246,247,251,.72);
-      border-bottom: 1px solid rgba(11,18,32,.12);
-    }
-    body.light .brand > div:last-child > div:first-child{
-      color: rgba(11,18,32,.92);
-    }
-    body.light .mark{
-      border: 1px solid rgba(11,18,32,.14);
-      background: radial-gradient(circle at 30% 25%, rgba(11,18,32,.10), rgba(11,18,32,.03) 60%, rgba(11,18,32,.01));
-      color: rgba(11,18,32,.86);
-    }
-
-    body.light .nav a,
-    body.light .nav .themeBtn{
-      border: 1px solid rgba(11,18,32,.14);
-      background: rgba(11,18,32,.06);
-      color: rgba(11,18,32,.88);
-    }
-    body.light .nav a:hover,
-    body.light .nav .themeBtn:hover{
-      background: rgba(11,18,32,.10);
-      box-shadow: 0 16px 36px rgba(11,18,32,.12);
-    }
-
-    body.light .tile{
-      border: 1px solid rgba(11,18,32,.14);
-      background: rgba(255,255,255,.55);
-      box-shadow: 0 22px 65px rgba(11,18,32,.12);
-    }
-
-    body.light .kicker{ color: rgba(11,18,32,.62); }
-    body.light .title{ color: rgba(11,18,32,.92); }
-    body.light .desc{ color: rgba(11,18,32,.70); }
-
-    body.light .badge{
-      border: 1px solid rgba(11,18,32,.14);
-      background: rgba(11,18,32,.06);
-      color: rgba(11,18,32,.88);
-      box-shadow: 0 14px 34px rgba(11,18,32,.10);
-    }
-    body.light .badgeDot{
-      border: 1px solid rgba(11,18,32,.18);
-      background: rgba(11,18,32,.18);
-    }
-    body.light .panelP{ color: rgba(11,18,32,.72); }
-
-    body.light .pCard{
-      border: 1px solid rgba(11,18,32,.14);
-      background: rgba(11,18,32,.05);
-      box-shadow: 0 14px 40px rgba(11,18,32,.10);
-    }
-    body.light .pCard:hover{
-      background: rgba(11,18,32,.08);
-      box-shadow: 0 18px 55px rgba(11,18,32,.14);
-    }
-    body.light .pTitle{ color: rgba(11,18,32,.92); }
-    body.light .pSub{ color: rgba(11,18,32,.70); }
-    body.light .pIco{
-      border: 1px solid rgba(11,18,32,.14);
-      background: radial-gradient(circle at 30% 25%, rgba(11,18,32,.10), rgba(11,18,32,.03) 60%, rgba(11,18,32,.01));
-    }
-    body.light .pCard::after{
-      background: radial-gradient(260px 120px at 20% 20%, rgba(11,18,32,.08), transparent 60%);
-      opacity: .65;
-    }
-
-    body.light .bidang{
-      border: 1px solid rgba(11,18,32,.14);
-      background: rgba(11,18,32,.04);
-    }
-    body.light .bHeadBtn{ color: rgba(11,18,32,.92); }
-    body.light .bHeadBtn:hover{ background: rgba(11,18,32,.06); }
-    body.light .bArrow{
-      border: 1px solid rgba(11,18,32,.14);
-      background: rgba(11,18,32,.05);
-    }
-
-    body.light .pill{
-      border: 1px solid rgba(11,18,32,.14);
-      background: rgba(11,18,32,.06);
-      color: rgba(11,18,32,.88);
-      box-shadow: 0 14px 34px rgba(11,18,32,.10);
-    }
-    body.light .pill:hover{
-      background: rgba(11,18,32,.10);
-      box-shadow: 0 18px 45px rgba(11,18,32,.12);
-    }
-    body.light .pillDot{
-      border: 1px solid rgba(11,18,32,.18);
-      background: rgba(11,18,32,.16);
-    }
-    body.light .pill.isActive{
-      background: rgba(11,18,32,.11);
-      outline-color: rgba(11,18,32,.22);
-    }
-
-    body.light .foot{ color: rgba(11,18,32,.62); }
-
-    body.light .toast{
-      border: 1px solid rgba(11,18,32,.14);
-      background: rgba(246,247,251,.80);
-      color: rgba(11,18,32,.86);
-      box-shadow: 0 18px 55px rgba(11,18,32,.14);
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Akademik — SMKG</title>
+<style>
+:root{--accent:#9b72f5;--accent-dim:rgba(155,114,245,.13);--accent-hi:rgba(155,114,245,.26);--bg-app:#08090d;--bg-panel:#0f1117;--bg-topbar:#0c0d12;--bg-sidebar:#0a0b0f;--bg-hover:rgba(255,255,255,.055);--bg-sel:rgba(155,114,245,.15);--bg-input:rgba(0,0,0,.4);--bg-card:rgba(255,255,255,.038);--border:rgba(255,255,255,.09);--border-md:rgba(255,255,255,.14);--text-1:rgba(255,255,255,.92);--text-2:rgba(255,255,255,.55);--text-3:rgba(255,255,255,.30);--navH:40px;--sideW:210px;--r-sm:4px;--r-md:6px;--green:#4ec94e;--red:#e05555;--amber:#f5a623}
+html[data-theme="light"]{--bg-app:#f0f1f6;--bg-panel:#ffffff;--bg-topbar:#ffffff;--bg-sidebar:#f5f5f8;--bg-hover:rgba(0,0,0,.045);--bg-sel:rgba(155,114,245,.11);--bg-input:rgba(0,0,0,.05);--bg-card:rgba(0,0,0,.028);--border:rgba(0,0,0,.09);--border-md:rgba(0,0,0,.14);--text-1:rgba(0,0,0,.88);--text-2:rgba(0,0,0,.50);--text-3:rgba(0,0,0,.28)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,system-ui,sans-serif;font-size:12px;background:var(--bg-app);color:var(--text-1)}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+svg{display:block}
+*{scrollbar-width:thin;scrollbar-color:var(--border-md) transparent}
+.app{display:grid;grid-template-rows:var(--navH) 1fr;grid-template-columns:var(--sideW) 1fr;height:100vh}
+.topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;height:var(--navH);padding:0 12px;gap:8px;background:var(--bg-topbar);border-bottom:1px solid var(--border);z-index:200}
+.tb-left{display:flex;align-items:center;gap:8px;min-width:0}
+.tb-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.app-icon{width:22px;height:22px;border-radius:var(--r-sm);background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 0 1px rgba(155,114,245,.35),0 4px 14px rgba(155,114,245,.22)}
+.app-icon svg{width:11px;height:11px}
+.app-name{font-size:12px;font-weight:700}
+.app-sub{font-size:11px;color:var(--text-3)}
+.tb-div{width:1px;height:16px;background:var(--border)}
+.breadcrumb{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2)}
+.breadcrumb .sep{color:var(--text-3)}
+.bc-active{color:var(--text-1);font-weight:600}
+.tb-btn{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:var(--r-sm);font-size:11px;color:var(--text-2);border:1px solid transparent;transition:background .14s,color .14s;white-space:nowrap;cursor:pointer}
+.tb-btn:hover{background:var(--bg-hover);color:var(--text-1)}
+.user-badge{display:flex;align-items:center;gap:7px;padding:3px 9px 3px 3px;border-radius:99px;border:1px solid var(--border);background:var(--bg-hover);font-size:11px;font-weight:600}
+.avatar{width:22px;height:22px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent-hi);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--accent)}
+.sidebar{background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sb-search{display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-search input{flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 8px;font-size:11px;color:var(--text-1);outline:none;transition:border-color .15s}
+.sb-search input:focus{border-color:var(--accent)}
+.sb-search input::placeholder{color:var(--text-3)}
+.sb-scroll{flex:1;overflow-y:auto;padding:4px 0 8px}
+.sb-scroll::-webkit-scrollbar{width:3px}
+.sb-scroll::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:3px}
+.sb-group{border-radius:var(--r-sm);margin:0 4px 2px;transition:background .15s}
+.sb-group.drag-over{background:var(--accent-dim);outline:1px dashed var(--accent)}
+.sb-group.dragging{opacity:.4}
+.group-head{display:flex;align-items:center;gap:4px;padding:6px 6px 5px;cursor:pointer;user-select:none;border-radius:var(--r-sm);transition:background .12s}
+.group-head:hover{background:var(--bg-hover)}
+.drag-handle{display:flex;flex-direction:column;gap:2px;padding:2px 3px;cursor:grab;opacity:.35;transition:opacity .14s;flex-shrink:0}
+.drag-handle:active{cursor:grabbing}
+.drag-handle:hover{opacity:.75}
+.drag-handle span{display:block;width:12px;height:1.5px;background:var(--text-2);border-radius:1px}
+.group-arrow{font-size:9px;color:var(--text-3);transition:transform .22s;flex-shrink:0}
+.sb-group.open .group-arrow{transform:rotate(90deg)}
+.group-label{font-size:10px;font-weight:700;color:var(--text-2);letter-spacing:.04em;text-transform:uppercase;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group-count{font-size:9px;color:var(--text-3);background:var(--bg-hover);padding:1px 5px;border-radius:99px;flex-shrink:0}
+.group-body{overflow:hidden;max-height:0;transition:max-height .3s cubic-bezier(.16,1,.3,1)}
+.sb-group.open .group-body{max-height:800px}
+.subject-list{padding:2px 0 4px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:5px 8px 5px 20px;font-size:11px;color:var(--text-2);cursor:pointer;border-radius:var(--r-sm);margin:0 4px;transition:background .11s,color .11s}
+.sb-item:hover{background:var(--bg-hover);color:var(--text-1)}
+.sb-item.active{background:var(--bg-sel);color:var(--accent);font-weight:600}
+.sb-item.active .sb-dot{background:var(--accent)}
+.sb-item.hidden{display:none}
+.sb-dot{width:5px;height:5px;border-radius:50%;background:var(--text-3);flex-shrink:0}
+.main{display:flex;flex-direction:column;overflow:hidden;background:var(--bg-panel);min-width:0}
+.mod-tabs{display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--border);background:var(--bg-sidebar);flex-shrink:0;overflow-x:auto;gap:1px}
+.mod-tabs::-webkit-scrollbar{height:0}
+.m-tab{display:flex;align-items:center;gap:6px;padding:9px 12px;font-size:11px;color:var(--text-2);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;flex-shrink:0;user-select:none}
+.m-tab:hover{color:var(--text-1)}
+.m-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.toolbar{display:flex;align-items:center;gap:3px;padding:0 12px;height:36px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0;overflow:hidden}
+.tool-btn{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:var(--r-sm);font-size:11px;color:var(--text-2);border:1px solid transparent;transition:background .12s,color .12s,border-color .12s;height:26px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.tool-btn:hover{background:var(--bg-hover);color:var(--text-1)}
+.tool-btn.primary{background:var(--accent);color:#fff;font-weight:700;border-color:transparent}
+.tool-btn.primary:hover{opacity:.88}
+.tool-btn.danger:hover{background:rgba(224,85,85,.12);color:var(--red);border-color:rgba(224,85,85,.22)}
+.tool-sep{width:1px;height:18px;background:var(--border);margin:0 3px;flex-shrink:0}
+.tool-spacer{flex:1}
+.tool-search{display:flex;align-items:center;gap:5px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 8px;height:26px;flex-shrink:0;transition:border-color .15s}
+.tool-search:focus-within{border-color:var(--accent)}
+.tool-search input{background:none;border:none;outline:none;font-size:11px;color:var(--text-1);width:160px}
+.tool-search input::placeholder{color:var(--text-3)}
+.no-link{opacity:.4;pointer-events:none}
+.file-area{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.drop-banner{margin:8px 12px 0;padding:8px 12px;border:1px dashed rgba(155,114,245,.3);border-radius:var(--r-md);background:var(--accent-dim);display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .15s,border-color .15s;flex-shrink:0}
+.drop-banner:hover{background:var(--accent-hi);border-color:rgba(155,114,245,.5)}
+.drop-banner input{display:none}
+.drop-ico{width:28px;height:28px;border-radius:var(--r-sm);border:1px solid var(--accent-hi);background:var(--accent-dim);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.drop-text{font-size:11px;color:var(--accent)}
+.drop-text strong{font-weight:700}
+.drop-hint{font-size:10px;color:rgba(155,114,245,.6);margin-left:auto;flex-shrink:0}
+.file-table-wrap{flex:1;overflow-y:auto;min-height:0}
+.file-table-wrap::-webkit-scrollbar{width:5px}
+.file-table-wrap::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:3px}
+table{width:100%;border-collapse:collapse}
+thead th{position:sticky;top:0;z-index:5;padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:.07em;text-transform:uppercase;background:var(--bg-panel);border-bottom:1px solid var(--border);white-space:nowrap;user-select:none}
+thead th.sortable{cursor:pointer}
+thead th.sortable:hover{color:var(--text-2)}
+thead th.sorted{color:var(--accent)}
+tbody tr{transition:background .1s;cursor:pointer}
+tbody tr:hover td{background:var(--bg-hover)}
+tbody tr.selected td{background:var(--bg-sel)}
+tbody td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-1);vertical-align:middle;white-space:nowrap}
+html[data-theme="light"] tbody td{border-bottom:1px solid rgba(0,0,0,.06)}
+tbody tr:last-child td{border-bottom:none}
+.f-check{width:13px;height:13px;cursor:pointer;accent-color:var(--accent)}
+.f-ico{font-size:13px}
+.f-name{font-size:11px;font-weight:600;color:var(--text-1);max-width:220px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
+.f-name:hover{color:var(--accent);text-decoration:underline;cursor:pointer}
+.f-ext{display:inline-flex;align-items:center;justify-content:center;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800;letter-spacing:.05em}
+.ext-pdf{background:rgba(224,85,85,.14);color:#e07070}
+.ext-docx{background:rgba(91,141,245,.14);color:#7aabee}
+.ext-xlsx{background:rgba(78,201,78,.14);color:#6ed46e}
+.ext-pptx{background:rgba(245,166,35,.14);color:#e0a060}
+.ext-default{background:var(--bg-hover);color:var(--text-2)}
+.f-new{display:inline-flex;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800;background:var(--accent-dim);color:var(--accent);margin-left:6px;vertical-align:middle}
+.pending-badge{display:inline-flex;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800;background:rgba(245,166,35,.14);color:var(--amber);margin-left:6px;vertical-align:middle}
+.row-actions{display:flex;align-items:center;gap:3px;opacity:0;transition:opacity .14s}
+tbody tr:hover .row-actions{opacity:1}
+.row-btn{padding:2px 7px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:10px;color:var(--text-2);transition:background .12s,color .12s;cursor:pointer;background:none}
+.row-btn:hover{background:var(--bg-hover);color:var(--text-1)}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:10px;color:var(--text-3)}
+.empty-ico{font-size:30px;opacity:.4}
+.empty-title{font-size:13px;font-weight:600;color:var(--text-2)}
+.empty-sub{font-size:11px;text-align:center;max-width:240px;line-height:1.6}
+.statusbar{display:flex;align-items:center;gap:10px;padding:0 12px;height:24px;border-top:1px solid var(--border);background:var(--bg-topbar);flex-shrink:0;font-size:10px;color:var(--text-3)}
+.s-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.s-green{background:var(--green)}
+.s-amber{background:var(--amber)}
+.login-overlay{position:fixed;inset:0;z-index:500;background:var(--bg-app);display:flex;align-items:center;justify-content:center;transition:opacity .4s,transform .4s}
+.login-overlay.off{opacity:0;pointer-events:none;transform:scale(.98)}
+.login-box{width:300px;background:var(--bg-panel);border:1px solid var(--border-md);border-radius:var(--r-md);overflow:hidden}
+.login-hdr{padding:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.login-ico{width:26px;height:26px;border-radius:var(--r-sm);background:var(--accent);display:flex;align-items:center;justify-content:center}
+.login-title{font-size:12px;font-weight:700}
+.login-sub2{font-size:10px;color:var(--text-3);margin-top:1px}
+.login-body{padding:14px;display:flex;flex-direction:column;gap:11px}
+.login-desc{font-size:11px;color:var(--text-2);line-height:1.6}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:9px;padding:8px 14px;border-radius:var(--r-sm);border:1px solid var(--border-md);background:var(--bg-hover);color:var(--text-1);font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;width:100%}
+.google-btn:hover{background:var(--bg-card)}
+.login-footer{padding:9px 14px;border-top:1px solid var(--border);background:var(--bg-sidebar);font-size:10px;color:var(--text-3);display:flex;align-items:center;gap:5px}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(6px);background:var(--bg-topbar);border:1px solid var(--border-md);color:var(--text-1);padding:7px 14px;border-radius:var(--r-md);font-size:11px;font-weight:600;z-index:999;pointer-events:none;opacity:0;transition:opacity .22s,transform .22s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
 </head>
-
 <body>
-  <div class="bg"></div>
+<div class="toast" id="toast"></div>
 
-  <!-- SVG morph overlay -->
-  <div class="morphWrap" aria-hidden="true">
-    <svg viewBox="0 0 1000 600" preserveAspectRatio="none">
-      <path id="blob1" fill="rgba(255,255,255,0.10)"></path>
-      <path id="blob2" fill="rgba(255,255,255,0.06)"></path>
-    </svg>
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-hdr">
+      <div class="login-ico"><svg viewBox="0 0 16 16" fill="none" width="12" height="12"><path d="M8 1L15 5v6L8 15 1 11V5L8 1Z" fill="rgba(255,255,255,.95)"/></svg></div>
+      <div><div class="login-title">Portal Akademik — SMKG</div><div class="login-sub2">Panel Management & File Access</div></div>
+    </div>
+    <div class="login-body">
+      <div class="login-desc">Restricted access. Sign in with your school Google account to continue.</div>
+      <button class="google-btn" id="loginBtn">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908C16.658 14.017 17.64 11.71 17.64 9.2z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.706A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+    </div>
+    <div class="login-footer">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="1" y="4" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1"/><path d="M3 4V3a2 2 0 014 0v1" stroke="currentColor" stroke-width="1"/></svg>
+      Only @smkg.edu.my accounts allowed
+    </div>
   </div>
+</div>
 
-  <div class="toast" id="toast">Selected</div>
-
+<div class="app">
   <header class="topbar">
-    <div class="brand">
-      <div class="mark">◆</div>
-      <div>
-        <div>Schools</div>
-        <div style="font-size:10px; color:rgba(255,255,255,.62); font-weight:350;">Group Access Portal</div>
+    <div class="tb-left">
+      <div class="app-icon"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1L15 5v6L8 15 1 11V5L8 1Z" fill="rgba(255,255,255,.95)"/></svg></div>
+      <span class="app-name">SMKG</span><span class="app-sub">/ Akademik</span>
+      <div class="tb-div"></div>
+      <div class="breadcrumb">
+        <span>Panel</span><span class="sep">›</span>
+        <span id="bcSubject" class="bc-active">—</span>
+        <span class="sep">›</span>
+        <span id="bcModule" class="bc-active">—</span>
       </div>
     </div>
-    <div class="nav">
-      <!-- ADDED: theme toggle button -->
-      <button class="themeBtn" id="themeToggle" type="button" aria-label="Toggle theme">☀ Light</button>
-      <a href="https://smk-gunsanad.github.io/smkg/index.html">Back</a>
+    <div class="tb-right">
+      <button class="tb-btn" id="themeBtn"><span id="themeLbl">Dark</span></button>
+      <div class="tb-div"></div>
+      <div class="user-badge" id="userBadge" style="display:none"><div class="avatar" id="userAv">T</div><span id="userName">Teacher</span></div>
+      <button class="tb-btn" id="logoutBtn" style="display:none" onclick="logout()">Sign Out</button>
+      <a class="tb-btn" href="index.html">← Back</a>
     </div>
   </header>
 
-  <main class="stage">
-    <section class="cardShell">
+  <aside class="sidebar">
+    <div class="sb-search">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="color:var(--text-3);flex-shrink:0"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 8l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <input type="text" id="sbSearch" placeholder="Search subjects..." oninput="filterSidebar(this.value)">
+    </div>
+    <div class="sb-scroll" id="sbScroll"></div>
+  </aside>
 
-      <!-- LEFT -->
-      <div class="tile launcher">
-        <div>
-          <div class="kicker">SCHOOLS MODULE</div>
-          <div class="title" id="scrambleTitle">Group Access Portal</div>
+  <main class="main">
+    <div class="mod-tabs" id="modTabs">
+      <div class="m-tab active" data-mod="pengurusan">🏛️ Pengurusan Am</div>
+      <div class="m-tab" data-mod="pekeliling">📋 Pekeliling</div>
+      <div class="m-tab" data-mod="mesyuarat">📝 Minit Mesyuarat</div>
+      <div class="m-tab" data-mod="pentaksiran">📊 Pentaksiran</div>
+      <div class="m-tab" data-mod="perancangan">🗓️ Perancangan</div>
+      <div class="m-tab" data-mod="kewangan">💰 Kewangan</div>
+    </div>
 
-          <div class="desc">
-            <div class="bidangWrap" id="bidangWrap">
-
-              <!-- Bidang Bahasa -->
-              <div class="bidang">
-                <button class="bHeadBtn" type="button">
-                  <span>Bidang Bahasa</span>
-                  <span class="bArrow">⌄</span>
-                </button>
-                <div class="bBody">
-                  <div class="pillRow">
-                    <a class="pill" href="#" data-subject="bm"><span class="pillDot"></span>Bahasa Melayu</a>
-                    <a class="pill" href="#" data-subject="bi"><span class="pillDot"></span>Bahasa Inggeris</a>
-                    <a class="pill" href="#" data-subject="ba"><span class="pillDot"></span>Bahasa Arab</a>
-                    <a class="pill" href="#" data-subject="km"><span class="pillDot"></span>Kesusteraan Melayu</a>
-                    <a class="pill" href="#" data-subject="bkd"><span class="pillDot"></span>BKD</a>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Bidang Sains Matematik -->
-              <div class="bidang">
-                <button class="bHeadBtn" type="button">
-                  <span>Bidang Sains Matematik</span>
-                  <span class="bArrow">⌄</span>
-                </button>
-                <div class="bBody">
-                  <div class="pillRow">
-                    <a class="pill" href="#" data-subject="mt"><span class="pillDot"></span>Matematik</a>
-                    <a class="pill" href="#" data-subject="sc"><span class="pillDot"></span>Sains</a>
-                    <a class="pill" href="#" data-subject="bio"><span class="pillDot"></span>Biologi</a>
-                    <a class="pill" href="#" data-subject="fiz"><span class="pillDot"></span>Fizik</a>
-                    <a class="pill" href="#" data-subject="kim"><span class="pillDot"></span>Kimia</a>
-                    <a class="pill" href="#" data-subject="mt2"><span class="pillDot"></span>Matematik Tambahan</a>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Bidang Sains Sosial -->
-              <div class="bidang">
-                <button class="bHeadBtn" type="button">
-                  <span>Bidang Sains Sosial</span>
-                  <span class="bArrow">⌄</span>
-                </button>
-                <div class="bBody">
-                  <div class="pillRow">
-                    <a class="pill" href="#" data-subject="sej"><span class="pillDot"></span>Sejarah</a>
-                    <a class="pill" href="#" data-subject="geo"><span class="pillDot"></span>Geografi</a>
-                    <a class="pill" href="#" data-subject="pai"><span class="pillDot"></span>Pendidikan Islam</a>
-                    <a class="pill" href="#" data-subject="pm"><span class="pillDot"></span>Pendidikan Moral</a>
-                    <a class="pill" href="#" data-subject="psv"><span class="pillDot"></span>Pendidikan Seni Visual</a>
-                    <a class="pill" href="#" data-subject="pjpk"><span class="pillDot"></span>PJPK</a>
-                    <a class="pill" href="#" data-subject="ss"><span class="pillDot"></span>Sains Sukan</a>
-                  </div>
-                </div>
-              </div>
-
-              <!-- TVET -->
-              <div class="bidang">
-                <button class="bHeadBtn" type="button">
-                  <span>TVET</span>
-                  <span class="bArrow">⌄</span>
-                </button>
-                <div class="bBody">
-                  <div class="pillRow">
-                    <a class="pill" href="#" data-subject="prt"><span class="pillDot"></span>Pertanian</a>
-                    <a class="pill" href="#" data-subject="per"><span class="pillDot"></span>Perniagaan</a>
-                    <a class="pill" href="#" data-subject="eko"><span class="pillDot"></span>Ekonomi</a>
-                    <a class="pill" href="#" data-subject="ak"><span class="pillDot"></span>Asas Kelestarian</a>
-                    <a class="pill" href="#" data-subject="kdp"><span class="pillDot"></span>Katering dan Penyajian</a>
-                    <a class="pill" href="#" data-subject="ldn"><span class="pillDot"></span>Landskap dan Nursery</a>
-                    <a class="pill" href="#" data-subject="rbt"><span class="pillDot"></span>RBT</a>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
+    <div class="toolbar">
+      <label class="tool-btn primary" style="cursor:pointer">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Upload
+        <input type="file" multiple style="display:none" id="fileInput" onchange="handleUpload(this)">
+      </label>
+      <button class="tool-btn danger" id="deleteBtn" style="display:none" onclick="handleDelete()">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M5 3V2h2v1M10 3L9 10H3L2 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Delete (<span id="selCount">0</span>)
+      </button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" id="openDriveBtn" onclick="openDrive()">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M7 2h3v3M10 2L6 6M5 3H3a1 1 0 00-1 1v5a1 1 0 001 1h6a1 1 0 001-1V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Open in Drive
+      </button>
+      <button class="tool-btn" onclick="sortFiles()">Sort A–Z</button>
+      <button class="tool-btn" onclick="toggleSelectAll()">Select All</button>
+      <div class="tool-spacer"></div>
+      <div class="tool-search">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="color:var(--text-3)"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 8l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Search files..." id="fileSearch" oninput="renderFiles()">
       </div>
+    </div>
 
-      <!-- RIGHT -->
-      <div class="tile panel" id="panel">
-        <div class="panelContent">
-
-          <div class="panelHeadRow">
-            <h2 class="panelH" id="dashTitle">Schools Dashboard</h2>
-            <div class="badge" id="subjectBadge" title="Current selection">
-              <span class="badgeDot"></span>
-              <span id="badgeText">Bahasa Melayu</span>
-            </div>
-          </div>
-
-          <p class="panelP" id="dashDesc">
-            Pilih modul di bawah untuk akses fail, rujukan atau ringkasan dashboard.
-          </p>
-
-          <div class="panelGrid">
-            <div class="pCard" data-module="pengurusan">
-              <div class="pTop">
-                <h3 class="pTitle">Pengurusan Am</h3>
-                <div class="pIco">🏛️</div>
-              </div>
-              <p class="pSub">Dokumen asas, borang, SOP dan rujukan harian.</p>
-            </div>
-
-            <div class="pCard" data-module="pekeliling">
-              <div class="pTop">
-                <h3 class="pTitle">Pekeliling</h3>
-                <div class="pIco">📌</div>
-              </div>
-              <p class="pSub">Surat pekeliling, arahan rasmi & garis panduan.</p>
-            </div>
-
-            <div class="pCard" data-module="mesyuarat">
-              <div class="pTop">
-                <h3 class="pTitle">Mesyuarat</h3>
-                <div class="pIco">🗓️</div>
-              </div>
-              <p class="pSub">Minit, agenda, tindakan susulan & rekod keputusan.</p>
-            </div>
-
-            <div class="pCard" data-module="pentaksiran">
-              <div class="pTop">
-                <h3 class="pTitle">Pentaksiran</h3>
-                <div class="pIco">📝</div>
-              </div>
-              <p class="pSub">Ujian, analisis, PBD, SPM/STPM & eviden.</p>
-            </div>
-
-            <div class="pCard" data-module="perancangan">
-              <div class="pTop">
-                <h3 class="pTitle">Perancangan Strategik</h3>
-                <div class="pIco">🎯</div>
-              </div>
-              <p class="pSub">Pelan tindakan, KPI, timeline & pemantauan.</p>
-            </div>
-
-            <div class="pCard" data-module="kewangan">
-              <div class="pTop">
-                <h3 class="pTitle">Kewangan</h3>
-                <div class="pIco">💳</div>
-              </div>
-              <p class="pSub">Bajet, perolehan, laporan & rekod kewangan.</p>
-            </div>
-          </div>
-        </div>
+    <div class="file-area">
+      <label class="drop-banner">
+        <div class="drop-ico"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3-4 3 4M2 11h10" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="drop-text"><strong>Drop files here</strong> or click Upload above</div>
+        <div class="drop-hint">PDF, DOCX, XLSX supported</div>
+        <input type="file" multiple onchange="handleUpload(this)">
+      </label>
+      <div class="file-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:28px"><input class="f-check" type="checkbox" id="masterCb" onchange="toggleAll(this)"></th>
+              <th style="width:22px"></th>
+              <th class="sortable sorted" onclick="sortBy('name')" id="th-name">File Name <span id="sort-name">↕</span></th>
+              <th style="width:56px">Type</th>
+              <th style="width:68px">Size</th>
+              <th>Uploaded by</th>
+              <th style="width:108px" class="sortable" onclick="sortBy('date')" id="th-date">Date <span id="sort-date"></span></th>
+              <th style="width:88px"></th>
+            </tr>
+          </thead>
+          <tbody id="fileBody"></tbody>
+        </table>
       </div>
+    </div>
 
-    </section>
+    <div class="statusbar">
+      <div class="s-dot s-amber" id="statusDot"></div>
+      <span id="statusConn">Not signed in</span>
+      <span>|</span>
+      <span id="statusSel">0 selected</span>
+      <span>|</span>
+      <span id="statusPath">—</span>
+      <div style="flex:1"></div>
+      <span id="statusCount">— files</span>
+    </div>
   </main>
+</div>
 
-  <div class="foot">Tip: Select a subject (left), then choose a module (right).</div>
+<script>
+const SUBJECT_LABEL={bm:"Bahasa Melayu",bi:"Bahasa Inggeris",ba:"Bahasa Arab",km:"Kesusteraan Melayu",bkd:"BKD",mt:"Matematik",sc:"Sains",bio:"Biologi",fiz:"Fizik",kim:"Kimia",mt2:"Matematik Tambahan",sej:"Sejarah",geo:"Geografi",pai:"Pend. Agama Islam",pm:"Pend. Moral",psv:"Pend. Seni Visual",pjpk:"PJPK",ss:"Sains Sukan",prt:"Pertanian",per:"Perniagaan",eko:"Ekonomi",ak:"Asas Kelestarian",kdp:"Katering & Penyajian",ldn:"Landskap & Nursery",rbt:"RBT"};
+const GROUPS=[{id:"g1",label:"Bidang Sains Matematik",subjects:["mt","sc","bio","fiz","kim","mt2"]},{id:"g2",label:"Bidang Bahasa",subjects:["bm","bi","ba","km","bkd"]},{id:"g3",label:"Bidang Sains Sosial",subjects:["sej","geo","pai","pm","psv","pjpk","ss"]},{id:"g4",label:"TVET",subjects:["prt","per","eko","ak","kdp","ldn","rbt"]}];
+const LINKS={bm:{pengurusan:"https://drive.google.com/drive/folders/1_mfA8XdLD-jNh9iAY-TQI8cVX4Cb1c2r?usp=sharing",pekeliling:"https://drive.google.com/drive/folders/103iYyYK_NDMH4vlD7EMk9KwhTfLD_Obp?usp=sharing",mesyuarat:"https://drive.google.com/drive/folders/1cu6yTjH0dr2xYDzLe65aGhJxMhHhRtRH?usp=sharing",pentaksiran:"https://drive.google.com/drive/folders/1QUKk5DTCA2ndC-zj1Td9Ez7ssBQffRD0?usp=sharing",perancangan:"https://drive.google.com/drive/folders/19AwsEnKQlmcjwFmolZWPD6BxEiz-s99d?usp=sharing",kewangan:"https://drive.google.com/drive/folders/19AwsEnKQlmcjwFmolZWPD6BxEiz-s99d?usp=sharing"},bi:{pengurusan:"https://drive.google.com/drive/folders/1Jrzf9XJkqUuITL6uqj85z_IjDKV9LHJR?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1EBQ6Nv86eNIwu_icHrNo-Yex0RTFVMel?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1XR-HA_oAuI8or8ugF4klvc5ebN2-JJdy?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1MjaF8yTgDCViCoAYDdkA3xV-_ez2HITC?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1ixR7lbf0Y_5XEFhl4jhy0Eh4ioY5w0AJ?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1ChosK1WBFnxj7SPL4Gz6_ZDj8Ap6P-Bp?usp=drive_link"},ba:{pengurusan:"https://drive.google.com/drive/folders/1JOgzqG1g0-p2vjfhW5bsej9FWOBnW0h9?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1AcYNdagBZ3hcNF86LorS9zFMQrdLJZJD?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1EXBic7wE77d6B39vAV5TCOCc6x0vo2hL?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1Ns8lr2lSoKLsih6ghzvG-PGkm1cwL0gd?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1BQm8Dp-Z51eeB-KZn1KOlcMXJi1zPV1X?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1_5USgbdVxFs1kYx3JhXF4isgKMhQz4OC?usp=drive_link"},km:{pengurusan:"https://drive.google.com/drive/folders/1t20DcE4jbZy_pxcCtmD9yL2KVYqFl3tV?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1jI3wDyqS6JDzGOZDKSsZdn44n9eyq663?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1ApIJltOXhWFY417iWnR8ZsgIwLpCkhew?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1xBPqe8QbnIpZz0cSVmv2iplHNiSb5WJt?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1FzcU2SsNaEe-fQ_lmHnTpwfL44cLf4iF?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1hrHY1dR1es2jYS1JZhfr9PZjZI_NY24t?usp=drive_link"},bkd:{pengurusan:"https://drive.google.com/drive/folders/1kS4aapz5aNwRTghC5NhFsyWMxvfna2Xx?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/19pWW5GhLez80Lh2Ae6Ov42s8M9kMguRg?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1hUUuUFf6a7fIVL-Xpp4bKi2msIVmia_c?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1KIubcnvTDVMaGCeK8GqhBUUwPfTmnVmc?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1OxP_448r4ROCwhC5o27ISoaHQ5InQqAf?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1NGupwPHBMc4HYHIVrGkq-Bfv9Hty2s4w?usp=drive_link"},mt:{pengurusan:"https://drive.google.com/drive/folders/1TnRcgg2BFhUDJc54gVardi1pWRJfhUfQ?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1X66O0AUonabuhDDp1yQarw8LBrpMCdtE?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1D7JaE3sIeE6wTYWsz0QLH9BGPo3I2-MX?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1KUa7BwV9NoNuR0BmrguNE4b-aZE3rB1W?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1qEOq9vH9NgwLqvOFyzTGXn-afph1jMOH?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1NQHWVW1vgd_wdA06O-n_bWWXqtREe7jo?usp=drive_link"},sc:{pengurusan:"https://drive.google.com/drive/folders/1z8QO3kvXUalvxdaM3TF1t_QGVsiv9Kx3?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1zq3ZOMBd2YhMidwehJ6q_8pe2glnTSQT?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1Rr6AT-BUy1jNgjOOuxxIl4T63ZA-8taw?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1mrIJRKPLFZqM5BXJwr-waOWo8TO_Tv1W?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1RQdUJgHP9PoOHlA052TQphgyzHhi87KM?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/15YQj6-QyGGsuFQ8BFNDCl6pb37Qfh2p3?usp=drive_link"},bio:{pengurusan:"https://drive.google.com/drive/folders/1eNksELZJK-_5wEFr1CLOKW4tBo5iRkUH?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1pEBv7ic4XYta4wvrvXpixrjzXjbgjsfa?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1vOhVPkBYGsr_S3bv53iJwcX8NNEbSJ3G?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1U0J0o7yjmmOcvSqMNfoxFza-mPeumHEH?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1RlB4JqERbNShD5kz9Y0THXnBRehIX0XA?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1lx1J9c0EGxeMvz8E1q-TISgtkrcg4J2O?usp=drive_link"},fiz:{pengurusan:"https://drive.google.com/drive/folders/18Icqi_gFyJAc7wsLU7KP7IDlYoLt_wb8?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1ohYLXQwP5GMic_QaJMHn1WZnYu2oPBCO?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1XJClmeOARQzo9WL_L99Eg6N-drV6vrP5?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1ilX-Webh6UHqRDTM-2BhKreg2ghHrk-m?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1zBvw2he5LjLZZT_eGVxPh0tT5wPKaCG0?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/15ITYRv0AmbnnuVg7t9bEaBcBe4hFKrrK?usp=drive_link"},kim:{pengurusan:"https://drive.google.com/drive/folders/1pvmBEmbnQpYgzVgfFEGPmF2uOHDtOjbS?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1YKc73pL3n_OWET4SJ5VqzBAqwjVOuPbZ?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1PvR6ZO1Ri76uC5otosHCvt7jZ4vKo7yt?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/10Pmrh5iAWuQV7mwAnnYojZihpZvxqNQA?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1XdMEjZsBfNr9fGwHYjs-m5EoRm4OSBz-?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/14k34mwkrXiIBh8uix6cRmP7uIAT-V4R-?usp=drive_link"},mt2:{pengurusan:"https://drive.google.com/drive/folders/1Ny7tO0fhq78T8SaFo7vx13xEVrx05aBF?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1RtS0I1q4llwF-QR51ZZV8pRvgjQNxIAy?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1f1i3Z0PGJEHdRbcoSXOjlWtDLpqfsjwB?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1FaZfiFNcRiZb8ikVgMdyll_RDslMD3HZ?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/19zsEm-5DrCPzIOyx_z5yVSy0eQiIsyNG?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1xyFJEP7fAectz62pPdXemyx6I0tZZen7?usp=drive_link"},sej:{pengurusan:"https://drive.google.com/drive/folders/1KTel9kiZDhe0ouCdivVazxoHt7MC9poW?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1pVURiDmgkBJau5DK0vm9EPkYXJP5x8ji?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1EBEpOm0Ob-QteA0OwOig_FJMP4Jk8dfK?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1Y-W7MmpU3cZnwuY1razNwYDb1_MSDcPb?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1_HE6H7NcxP5LmTyzUcX_j6sRnZbTCR70?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1hBSMFD6TH5mqxwdjWjKIgRHSry7QQ2Wl?usp=drive_link"},geo:{pengurusan:"https://drive.google.com/drive/folders/17f0dewjc-0eqg0VxyjdYz9GI0_uE0lk-?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1u_lTAWcBaaaFYtpddOLu4bFlROlp2ari?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1BXXHZNU4DOLg2Tf-qSh8zT1UlQRKIVqj?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1UbiWlTd9FkaCgD8X2pL8Ist6_p_kDnY3?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/162UVv1rfHfd794jT_aiJXTMmbwR4raLq?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1gH5FokfV1BzNmX0q0Lrn2mjlLtwldwPE?usp=drive_link"},pai:{pengurusan:"https://drive.google.com/drive/folders/12LMEF7c4YCDYhdGR4ehrO50BzfoQPiKc?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1t4HB22JzxXvIgvbGGdNJJsd6wsOLmXAj?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1MdQSyZomeDOjskYepTeb_hiJQpmZIWbH?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1vPOCsrnziJH_IoV3XlC7xY4Er4d7JY5L?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1lG_eF6yGQ-oOdg964XnLTBWw49Gw_fNO?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1N-jq63AukTbwwyo3rfc3Cy97EunR1aiG?usp=drive_link"},pm:{pengurusan:"https://drive.google.com/drive/folders/15QI9KmpF4GcATxmZ9l-K7oObMOV39Ce2?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1APwoDhf5k3bkS-DJJyuZwaaGOYjavmTI?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1V1lVscIZcoDD5iBlGyRiYmSaWTdpYaZ5?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/108Bsqo4U25cjXkRgM_N9wpwlQ2KkxbaB?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1VpcTDnQ-W16D6sy1Q1W_22j2JYT5vjuW?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1h8Nnm6xRI9w0pXp1yAbCU-uWEcDb4vcN?usp=drive_link"},psv:{pengurusan:"https://drive.google.com/drive/folders/1FzhRwZlg6W_oSkzp5gkHPfehZ8mKR-2-?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1galR46m5FPfB9N4fU2jTFsA51Old-xLa?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1C5ME9dujyawSo3Y-iPNAfi4rk8mm9_Wf?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1KVTBQVcnVtSgLlrBFSekvo_49XGjJ6Q_?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1HU4x52CiLPMDT6bkWdlRcfPEG0Q1QNcY?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1Czq2w2491N7jpAlkhDXsacKZqaOnOwqa?usp=drive_link"},pjpk:{pengurusan:"https://drive.google.com/drive/folders/13npKMymjni_PdXKcea0vPdCqrpr441Ww?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1Dt-Tz1MK-DntW67sazPdvmREJZwwWBYW?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1EN3Ua0TH4DSBhKpjqb3TE5sIKjcD67Ns?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/12RhN87702DFqBwEnOJV_RRMzccuq5syS?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/13KZmpFYYHNXqOHmxrfK-pepkqMDPaOSJ?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/15IzUjI88DXRaThDRiX--zdkjjB0DDF0-?usp=drive_link"},ss:{pengurusan:"https://drive.google.com/drive/folders/1jdj_uZ83RGZiKTwm-FCOc9MPDsI206qc?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1Q7Vj5q0unWY9EljkRFw5ukgVbURPkA_8?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1ICuqkMkdh5gtAgWHZUesRSqVxlAWIVky?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1G8LC1nKOOc7mZwcdRmEBe7Epzr32nMTa?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/10aLrVw5Xrpi4WoB3sJxBlsYq4lGqkesW?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/16pNyRBWCbggWbSGolFMyESxvVi3UnUmr?usp=drive_link"},prt:{pengurusan:"https://drive.google.com/drive/folders/1oMNIBSvSA4G_9aVRffcaNPbq0wN-9Skd?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/17pArf7jJ6BxYyJ97NvjghdGvIMKE1TH7?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1RV129OOnUsf78HfOeDVvoF3B9ZfB_SBj?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1sGPfZOh5lwYP4Nmh6PVOuv0f2g8KntbB?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1iPRoPJthj7stdKPOaWpS_SW6PNR1K94X?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1H-ka9gQdyRWjq0D3_WawHsxhDjvd3Ede?usp=drive_link"},per:{pengurusan:"https://drive.google.com/drive/folders/1nrJaevWG1vQwrj9O0-2Lod2POwDp9MG2?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1o0sjwn_JWz2vjiQO1jy7CDSHZURQhcvg?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1D0fAozAO1y5AViyskuSj_drGFjUpQAaf?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1mIavIjJHfWH4sBohUcfBJ41LBJV3qviz?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1cL1KTh4v6lt1KCeR3RLdeBInB61rBD3E?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1pQKxckJ0EF5BU338mbNzeBfDXnkzyIKk?usp=drive_link"},eko:{pengurusan:"https://drive.google.com/drive/folders/15a4j0XLrNB7jKQEjEPoZ-aBIrRpPMW8v?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1Xr7XP0FFg6ofmt-6whLZ__Yhj7WqD8pr?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1TdQ8pM43ZvAAKvEMcRD-jqxsZr4jKRqI?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1rHBdMODnpqIdnA6Au2XDC2RNDp45Q30b?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1hhlUK1T0yxwSa-o44Yf1kx_LrnKJrVe9?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1FZLV9t4trHAW7d9UlSG7aK0DNxY-rAFd?usp=drive_link"},ak:{pengurusan:"https://drive.google.com/drive/folders/1Qgb9chYHZsHS4DLQJq6iycF1xRaNG93m?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1671Y09-A6SBSeChkGT6Egq1srVvrtHHe?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/17iKpnjhhhpXLy9hgWLVonVnIzti-MzXX?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/15c-wySf5MjmP70PndJjJjnzZ9QpsU6eH?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1V3ZGoPitTFJrx_NydqkD1eAaz7N2SHJ4?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1VLIuebq2RRxmsbPSG0avRZKloBh-6e8Q?usp=drive_link"},kdp:{pengurusan:"https://drive.google.com/drive/folders/1lC38AB3IPs7q62g5kubqLDe_qqsFIAWs?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1M5QqjexIOOTBdenkwUqaBJretaGYJHed?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1WW1xhJ6ieXempqFPCA1wvvjASFg4ni9V?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/1tP6cLsktVenCuz-W3JhdFOZ7abdomjHT?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1s--f45yr4qwVIQ2Mqo9YvmLNs1iD8DgZ?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1he5kMSEk0WXs4wUXjAzB0iKfGSacNbrh?usp=drive_link"},ldn:{pengurusan:"https://drive.google.com/drive/folders/1hgegolySyLJLf1fpVIA4PRgjaT4KcVY4?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1HdTE7kDGkaxnEkq-A274YJIMZ66Wpy3Y?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/17VXQGhLokFqp5eRmJLCQmsgZtZLjLIrT?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/15WOVVRA_zUiXtSMqvw252ocxpLe5l4I3?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/1gJaRQF_g4ua-Hpm-w2cAGvqPDs6xhD4n?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/14-v_YHvcPhafXS71rWHxv0a9LUvmKo8F?usp=drive_link"},rbt:{pengurusan:"https://drive.google.com/drive/folders/11TZNYnBXLa192tT3lcpoosVggZ3qOMyL?usp=drive_link",pekeliling:"https://drive.google.com/drive/folders/1XWPsFmg5iNTW18mDgll-nIIUoA_47MK_?usp=drive_link",mesyuarat:"https://drive.google.com/drive/folders/1ahR7br4b3ttcvuTCJkwAeiQFOJggvmGZ?usp=drive_link",pentaksiran:"https://drive.google.com/drive/folders/14tlHFpWc_cYCvHCq8mTtTF54nOEYsC4P?usp=drive_link",perancangan:"https://drive.google.com/drive/folders/171pm2x3EYAyixXr3g2HTuenl8cz4k0Yr?usp=drive_link",kewangan:"https://drive.google.com/drive/folders/1rOWshS-ZmWmbSZElL7t5bZ3ZtQsnC9q2?usp=drive_link"}};
 
-  <script>
-    /*****************************************************************
-     * THEME TOGGLE (ADDED)
-     *****************************************************************/
-    (function initThemeToggle(){
-      const btn = document.getElementById("themeToggle");
-      if (!btn) return;
+const EXT_ICONS={PDF:"📄",DOCX:"📝",XLSX:"📊",PPTX:"📑",PNG:"🖼️",JPG:"🖼️",JPEG:"🖼️"};
+const EXT_CLASS={PDF:"ext-pdf",DOCX:"ext-docx",XLSX:"ext-xlsx",PPTX:"ext-pptx"};
+let curSubject="bm",curModule="pengurusan",selected=new Set(),nextId=100,sortKey="name",sortAsc=true,localFiles={},isLoggedIn=false;
+const loggedUser={name:"Teacher",initials:"T"};
+let groupOrder=["g1","g2","g3","g4"];
+try{const s=localStorage.getItem("smkg_group_order");if(s)groupOrder=JSON.parse(s);}catch(e){}
 
-      const KEY = "school_theme";
-      const saved = localStorage.getItem(KEY); // "light" | "dark" | null
-      const isLight = saved === "light";
+// Theme
+let theme=localStorage.getItem("smkg_theme")||"dark";
+function applyTheme(t){document.documentElement.setAttribute("data-theme",t);document.getElementById("themeLbl").textContent=t==="light"?"Light":"Dark";localStorage.setItem("smkg_theme",t);theme=t;}
+document.getElementById("themeBtn").onclick=()=>applyTheme(theme==="light"?"dark":"light");
+applyTheme(theme);
 
-      if (isLight) document.body.classList.add("light");
+// Login
+document.getElementById("loginBtn").onclick=()=>{
+  isLoggedIn=true;
+  document.getElementById("loginOverlay").classList.add("off");
+  document.getElementById("userBadge").style.display="flex";
+  document.getElementById("logoutBtn").style.display="flex";
+  document.getElementById("statusDot").className="s-dot s-green";
+  document.getElementById("statusConn").textContent="Connected to Drive";
+  showToast("Signed in ✓");
+};
+function logout(){
+  isLoggedIn=false;
+  document.getElementById("loginOverlay").classList.remove("off");
+  document.getElementById("userBadge").style.display="none";
+  document.getElementById("logoutBtn").style.display="none";
+  document.getElementById("statusDot").className="s-dot s-amber";
+  document.getElementById("statusConn").textContent="Not signed in";
+}
 
-      function syncBtn(){
-        const light = document.body.classList.contains("light");
-        btn.textContent = light ? "🌙 Dark" : "☀ Light";
-        btn.setAttribute("aria-pressed", light ? "true" : "false");
-      }
+// Sidebar
+function renderSidebar(filter){
+  const scroll=document.getElementById("sbScroll");
+  const groups=groupOrder.map(id=>GROUPS.find(g=>g.id===id)).filter(Boolean);
+  scroll.innerHTML=groups.map(group=>{
+    const anyVisible=!filter||group.subjects.some(k=>SUBJECT_LABEL[k].toLowerCase().includes((filter||"").toLowerCase()));
+    const forceOpen=filter&&anyVisible;
+    const items=group.subjects.map(key=>{
+      const label=SUBJECT_LABEL[key];
+      const hidden=filter&&!label.toLowerCase().includes(filter.toLowerCase());
+      const active=key===curSubject;
+      return `<div class="sb-item${active?" active":""}${hidden?" hidden":""}" onclick="selectSubject('${key}')"><span class="sb-dot"></span>${label}</div>`;
+    }).join("");
+    return `<div class="sb-group${forceOpen?" open":""}" id="${group.id}" draggable="true">`+
+      `<div class="group-head" onclick="toggleGroup(event,'${group.id}')">`+
+        `<div class="drag-handle" title="Drag to reorder groups"><span></span><span></span><span></span></div>`+
+        `<svg class="group-arrow" width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 2l4 2-4 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`+
+        `<span class="group-label">${group.label}</span>`+
+        `<span class="group-count">${group.subjects.length}</span>`+
+      `</div>`+
+      `<div class="group-body"><div class="subject-list">${items}</div></div>`+
+    `</div>`;
+  }).join("");
 
-      syncBtn();
-
-      btn.addEventListener("click", () => {
-        document.body.classList.toggle("light");
-        const lightNow = document.body.classList.contains("light");
-        localStorage.setItem(KEY, lightNow ? "light" : "dark");
-        syncBtn();
-      });
-    })();
-
-    /*****************************************************************
-     * 1) SVG PATH MORPH (PURE JS)
-     *****************************************************************/
-    const B1_A = "M 120 340 C 140 220 220 140 340 150 C 460 160 520 90 640 120 C 760 150 880 250 850 360 C 820 470 700 520 590 500 C 480 480 420 560 300 520 C 180 480 100 460 120 340 Z";
-    const B1_B = "M 160 320 C 110 210 250 120 360 170 C 470 220 520 80 650 140 C 780 200 900 250 830 390 C 770 510 690 500 570 470 C 450 440 420 560 290 520 C 160 480 210 420 160 320 Z";
-
-    const B2_A = "M 650 120 C 760 70 890 120 900 220 C 910 320 820 350 760 410 C 700 470 650 520 560 500 C 470 480 450 410 480 330 C 510 250 540 170 650 120 Z";
-    const B2_B = "M 610 140 C 720 60 900 90 910 230 C 920 370 820 360 770 430 C 720 500 650 540 560 500 C 470 460 430 410 460 320 C 490 230 500 190 610 140 Z";
-
-    const blob1 = document.getElementById("blob1");
-    const blob2 = document.getElementById("blob2");
-
-    function tokenizePath(d){
-      const parts = d.match(/[a-zA-Z]|-?\d*\.?\d+/g) || [];
-      const nums = [];
-      parts.forEach(p => { if (/^-?\d*\.?\d+$/.test(p)) nums.push(parseFloat(p)); });
-      return { parts, nums };
-    }
-
-    function interpPath(fromD, toD, t){
-      const A = tokenizePath(fromD);
-      const B = tokenizePath(toD);
-      if (A.nums.length !== B.nums.length) return fromD;
-
-      const out = [];
-      let ni = 0;
-      for (const p of A.parts){
-        if (/^-?\d*\.?\d+$/.test(p)) {
-          const v = A.nums[ni] + (B.nums[ni] - A.nums[ni]) * t;
-          out.push(String(Math.round(v * 100) / 100));
-          ni++;
-        } else out.push(p);
-      }
-      return out.join(" ");
-    }
-
-    const easeInOut = (t) => (t < 0.5) ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
-
-    function morphLoop(el, A, B, ms){
-      let dir = 1;
-      let start = performance.now();
-      function step(now){
-        const p = Math.min(1, (now - start) / ms);
-        const tt = easeInOut(p);
-        el.setAttribute("d", dir === 1 ? interpPath(A,B,tt) : interpPath(B,A,tt));
-        if (p >= 1){ dir *= -1; start = performance.now(); }
-        requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }
-
-    blob1.setAttribute("d", B1_A);
-    blob2.setAttribute("d", B2_A);
-    morphLoop(blob1, B1_A, B1_B, 5200);
-    morphLoop(blob2, B2_A, B2_B, 6800);
-
-
-
-    /*****************************************************************
-     * 3) Accordion: ONLY ONE open at a time
-     *****************************************************************/
-    const bidangBoxes = Array.from(document.querySelectorAll(".bidang"));
-
-    function setMaxHeight(box, open){
-      const body = box.querySelector(".bBody");
-      if (!body) return;
-      body.style.maxHeight = open ? (body.scrollHeight + "px") : "0px";
-    }
-
-    bidangBoxes.forEach(box => setMaxHeight(box, false));
-
-    bidangBoxes.forEach(box => {
-      const btn = box.querySelector(".bHeadBtn");
-      btn.addEventListener("click", () => {
-        const willOpen = !box.classList.contains("open");
-
-        bidangBoxes.forEach(b => {
-          b.classList.remove("open");
-          setMaxHeight(b, false);
-        });
-
-        if (willOpen){
-          box.classList.add("open");
-          setMaxHeight(box, true);
-        }
-      });
+  document.querySelectorAll(".sb-group").forEach(el=>{
+    el.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",el.id);setTimeout(()=>el.classList.add("dragging"),0);});
+    el.addEventListener("dragend",()=>el.classList.remove("dragging"));
+    el.addEventListener("dragover",e=>{e.preventDefault();el.classList.add("drag-over");});
+    el.addEventListener("dragleave",()=>el.classList.remove("drag-over"));
+    el.addEventListener("drop",e=>{
+      e.preventDefault();el.classList.remove("drag-over");
+      const fromId=e.dataTransfer.getData("text/plain"),toId=el.id;
+      if(fromId===toId)return;
+      const fi=groupOrder.indexOf(fromId),ti=groupOrder.indexOf(toId);
+      if(fi<0||ti<0)return;
+      groupOrder.splice(fi,1);groupOrder.splice(ti,0,fromId);
+      localStorage.setItem("smkg_group_order",JSON.stringify(groupOrder));
+      renderSidebar(document.getElementById("sbSearch").value);
+      showToast("Group order saved ✓");
     });
+  });
+}
+function toggleGroup(e,id){
+  if(e.target.closest(".drag-handle"))return;
+  const el=document.getElementById(id);
+  if(el)el.classList.toggle("open");
+}
+function filterSidebar(v){renderSidebar(v);}
+document.getElementById("sbSearch").addEventListener("input",function(){filterSidebar(this.value);});
 
-    /*****************************************************************
-     * 4) Dynamic Links: subject (left) -> module (right) -> URL
-     *****************************************************************/
-    let currentSubject = "bm"; // default
+// Subject select
+function selectSubject(key){
+  curSubject=key;
+  document.getElementById("bcSubject").textContent=SUBJECT_LABEL[key]||key;
+  selected.clear();updateDeleteBtn();updateStatus();
+  renderSidebar(document.getElementById("sbSearch").value);
+  renderFiles();updateDriveBtn();
+  showToast(SUBJECT_LABEL[key]||key);
+}
 
-    const SUBJECT_LABEL = {
-      bm: "Bahasa Melayu",
-      bi: "Bahasa Inggeris",
-      ba: "Bahasa Arab",
-      km: "Kesusteraan Melayu",
-      bkd: "BKD",
-      mt: "Matematik",
-      sc: "Sains",
-      bio: "Biologi",
-      fiz: "Fizik",
-      kim: "Kimia",
-      mt2: "Matematik Tambahan",
-      sej: "Sejarah",
-      geo: "Geografi",
-      pai: "Pendidikan Agama Islam",
-      pm: "Pendidikan Moral",
-      psv: "Pendidikan Seni Visual",
-      pjpk: "PJPK",
-      ss: "Sains Sukan",
-      prt: "Pertanian",
-      per: "Perniagaan",
-      eko: "Ekonomi",
-      ak: "Asas Kelestarian",
-      ldn: "Landskap dan Nursery",
-      rbt: "RBT",
-    };
+// Module tabs
+document.querySelectorAll(".m-tab").forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll(".m-tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    curModule=tab.dataset.mod;
+    const raw=tab.textContent.trim();
+    const label=raw.replace(/^\S+\s/,"");
+    document.getElementById("bcModule").textContent=label;
+    selected.clear();updateDeleteBtn();updateStatus();renderFiles();updateDriveBtn();
+  };
+});
 
-    // Replace these placeholder URLs with your real Google Drive folder/file links.
-    const LINKS = {
-      bm: {
-        pengurusan: "https://drive.google.com/drive/folders/1_mfA8XdLD-jNh9iAY-TQI8cVX4Cb1c2r?usp=sharing",
-        pekeliling: "https://drive.google.com/drive/folders/103iYyYK_NDMH4vlD7EMk9KwhTfLD_Obp?usp=sharing",
-        mesyuarat: "https://drive.google.com/drive/folders/1cu6yTjH0dr2xYDzLe65aGhJxMhHhRtRH?usp=sharing",
-        pentaksiran: "https://drive.google.com/drive/folders/1QUKk5DTCA2ndC-zj1Td9Ez7ssBQffRD0?usp=sharing",
-        perancangan: "https://drive.google.com/drive/folders/19AwsEnKQlmcjwFmolZWPD6BxEiz-s99d?usp=sharing",
-        kewangan: "https://drive.google.com/drive/folders/19AwsEnKQlmcjwFmolZWPD6BxEiz-s99d?usp=sharing",
-      },
-      bi: {
-        pengurusan: "https://drive.google.com/drive/folders/1Jrzf9XJkqUuITL6uqj85z_IjDKV9LHJR?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1EBQ6Nv86eNIwu_icHrNo-Yex0RTFVMel?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1XR-HA_oAuI8or8ugF4klvc5ebN2-JJdy?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1MjaF8yTgDCViCoAYDdkA3xV-_ez2HITC?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1ixR7lbf0Y_5XEFhl4jhy0Eh4ioY5w0AJ?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1ChosK1WBFnxj7SPL4Gz6_ZDj8Ap6P-Bp?usp=drive_link",
-      },
-      ba: {
-        pengurusan: "https://drive.google.com/drive/folders/1JOgzqG1g0-p2vjfhW5bsej9FWOBnW0h9?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1AcYNdagBZ3hcNF86LorS9zFMQrdLJZJD?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1EXBic7wE77d6B39vAV5TCOCc6x0vo2hL?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1Ns8lr2lSoKLsih6ghzvG-PGkm1cwL0gd?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1BQm8Dp-Z51eeB-KZn1KOlcMXJi1zPV1X?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1_5USgbdVxFs1kYx3JhXF4isgKMhQz4OC?usp=drive_link",
-      },
-      km: {
-        pengurusan: "https://drive.google.com/drive/folders/1t20DcE4jbZy_pxcCtmD9yL2KVYqFl3tV?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1jI3wDyqS6JDzGOZDKSsZdn44n9eyq663?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1ApIJltOXhWFY417iWnR8ZsgIwLpCkhew?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1xBPqe8QbnIpZz0cSVmv2iplHNiSb5WJt?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1FzcU2SsNaEe-fQ_lmHnTpwfL44cLf4iF?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1hrHY1dR1es2jYS1JZhfr9PZjZI_NY24t?usp=drive_link",
-      },
-      bkd: {
-        pengurusan: "https://drive.google.com/drive/folders/1kS4aapz5aNwRTghC5NhFsyWMxvfna2Xx?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/19pWW5GhLez80Lh2Ae6Ov42s8M9kMguRg?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1hUUuUFf6a7fIVL-Xpp4bKi2msIVmia_c?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1KIubcnvTDVMaGCeK8GqhBUUwPfTmnVmc?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1OxP_448r4ROCwhC5o27ISoaHQ5InQqAf?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1NGupwPHBMc4HYHIVrGkq-Bfv9Hty2s4w?usp=drive_link",
-      },
-      mt: {
-        pengurusan: "https://drive.google.com/drive/folders/1TnRcgg2BFhUDJc54gVardi1pWRJfhUfQ?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1X66O0AUonabuhDDp1yQarw8LBrpMCdtE?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1D7JaE3sIeE6wTYWsz0QLH9BGPo3I2-MX?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1KUa7BwV9NoNuR0BmrguNE4b-aZE3rB1W?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1qEOq9vH9NgwLqvOFyzTGXn-afph1jMOH?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1NQHWVW1vgd_wdA06O-n_bWWXqtREe7jo?usp=drive_link",
-      },
-      sc: {
-        pengurusan: "https://drive.google.com/drive/folders/1z8QO3kvXUalvxdaM3TF1t_QGVsiv9Kx3?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1zq3ZOMBd2YhMidwehJ6q_8pe2glnTSQT?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1Rr6AT-BUy1jNgjOOuxxIl4T63ZA-8taw?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1mrIJRKPLFZqM5BXJwr-waOWo8TO_Tv1W?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1RQdUJgHP9PoOHlA052TQphgyzHhi87KM?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/15YQj6-QyGGsuFQ8BFNDCl6pb37Qfh2p3?usp=drive_link",
-      },
-      bio: {
-        pengurusan: "https://drive.google.com/drive/folders/1eNksELZJK-_5wEFr1CLOKW4tBo5iRkUH?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1pEBv7ic4XYta4wvrvXpixrjzXjbgjsfa?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1vOhVPkBYGsr_S3bv53iJwcX8NNEbSJ3G?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1U0J0o7yjmmOcvSqMNfoxFza-mPeumHEH?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1RlB4JqERbNShD5kz9Y0THXnBRehIX0XA?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1lx1J9c0EGxeMvz8E1q-TISgtkrcg4J2O?usp=drive_link",
-      },
-      fiz: {
-        pengurusan: "https://drive.google.com/drive/folders/18Icqi_gFyJAc7wsLU7KP7IDlYoLt_wb8?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1ohYLXQwP5GMic_QaJMHn1WZnYu2oPBCO?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1XJClmeOARQzo9WL_L99Eg6N-drV6vrP5?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1ilX-Webh6UHqRDTM-2BhKreg2ghHrk-m?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1zBvw2he5LjLZZT_eGVxPh0tT5wPKaCG0?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/15ITYRv0AmbnnuVg7t9bEaBcBe4hFKrrK?usp=drive_link",
-      },
-      kim: {
-        pengurusan: "https://drive.google.com/drive/folders/1pvmBEmbnQpYgzVgfFEGPmF2uOHDtOjbS?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1YKc73pL3n_OWET4SJ5VqzBAqwjVOuPbZ?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1PvR6ZO1Ri76uC5otosHCvt7jZ4vKo7yt?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/10Pmrh5iAWuQV7mwAnnYojZihpZvxqNQA?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1XdMEjZsBfNr9fGwHYjs-m5EoRm4OSBz-?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/14k34mwkrXiIBh8uix6cRmP7uIAT-V4R-?usp=drive_link",
-      },
-      mt2: {
-        pengurusan: "https://drive.google.com/drive/folders/1Ny7tO0fhq78T8SaFo7vx13xEVrx05aBF?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1RtS0I1q4llwF-QR51ZZV8pRvgjQNxIAy?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1f1i3Z0PGJEHdRbcoSXOjlWtDLpqfsjwB?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1FaZfiFNcRiZb8ikVgMdyll_RDslMD3HZ?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/19zsEm-5DrCPzIOyx_z5yVSy0eQiIsyNG?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1xyFJEP7fAectz62pPdXemyx6I0tZZen7?usp=drive_link",
-      },
-      sej: {
-        pengurusan: "https://drive.google.com/drive/folders/1KTel9kiZDhe0ouCdivVazxoHt7MC9poW?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1pVURiDmgkBJau5DK0vm9EPkYXJP5x8ji?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1EBEpOm0Ob-QteA0OwOig_FJMP4Jk8dfK?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1Y-W7MmpU3cZnwuY1razNwYDb1_MSDcPb?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1_HE6H7NcxP5LmTyzUcX_j6sRnZbTCR70?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1hBSMFD6TH5mqxwdjWjKIgRHSry7QQ2Wl?usp=drive_link",
-      },
-      geo: {
-        pengurusan: "https://drive.google.com/drive/folders/17f0dewjc-0eqg0VxyjdYz9GI0_uE0lk-?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1u_lTAWcBaaaFYtpddOLu4bFlROlp2ari?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1BXXHZNU4DOLg2Tf-qSh8zT1UlQRKIVqj?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1UbiWlTd9FkaCgD8X2pL8Ist6_p_kDnY3?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/162UVv1rfHfd794jT_aiJXTMmbwR4raLq?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1gH5FokfV1BzNmX0q0Lrn2mjlLtwldwPE?usp=drive_link",
-      },
-      pai: {
-        pengurusan: "https://drive.google.com/drive/folders/12LMEF7c4YCDYhdGR4ehrO50BzfoQPiKc?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1t4HB22JzxXvIgvbGGdNJJsd6wsOLmXAj?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1MdQSyZomeDOjskYepTeb_hiJQpmZIWbH?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1vPOCsrnziJH_IoV3XlC7xY4Er4d7JY5L?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1lG_eF6yGQ-oOdg964XnLTBWw49Gw_fNO?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1N-jq63AukTbwwyo3rfc3Cy97EunR1aiG?usp=drive_link",
-      },
-      pm: {
-        pengurusan: "https://drive.google.com/drive/folders/15QI9KmpF4GcATxmZ9l-K7oObMOV39Ce2?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1APwoDhf5k3bkS-DJJyuZwaaGOYjavmTI?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1V1lVscIZcoDD5iBlGyRiYmSaWTdpYaZ5?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/108Bsqo4U25cjXkRgM_N9wpwlQ2KkxbaB?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1VpcTDnQ-W16D6sy1Q1W_22j2JYT5vjuW?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1h8Nnm6xRI9w0pXp1yAbCU-uWEcDb4vcN?usp=drive_link",
-      },
-      psv: {
-        pengurusan: "https://drive.google.com/drive/folders/1FzhRwZlg6W_oSkzp5gkHPfehZ8mKR-2-?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1galR46m5FPfB9N4fU2jTFsA51Old-xLa?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1C5ME9dujyawSo3Y-iPNAfi4rk8mm9_Wf?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1KVTBQVcnVtSgLlrBFSekvo_49XGjJ6Q_?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1HU4x52CiLPMDT6bkWdlRcfPEG0Q1QNcY?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1Czq2w2491N7jpAlkhDXsacKZqaOnOwqa?usp=drive_link",
-      },
-      pjpk: {
-        pengurusan: "https://drive.google.com/drive/folders/13npKMymjni_PdXKcea0vPdCqrpr441Ww?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1Dt-Tz1MK-DntW67sazPdvmREJZwwWBYW?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1EN3Ua0TH4DSBhKpjqb3TE5sIKjcD67Ns?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/12RhN87702DFqBwEnOJV_RRMzccuq5syS?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/13KZmpFYYHNXqOHmxrfK-pepkqMDPaOSJ?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/15IzUjI88DXRaThDRiX--zdkjjB0DDF0-?usp=drive_link",
-      },
-      ss: {
-        pengurusan: "https://drive.google.com/drive/folders/1jdj_uZ83RGZiKTwm-FCOc9MPDsI206qc?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1Q7Vj5q0unWY9EljkRFw5ukgVbURPkA_8?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1ICuqkMkdh5gtAgWHZUesRSqVxlAWIVky?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1G8LC1nKOOc7mZwcdRmEBe7Epzr32nMTa?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/10aLrVw5Xrpi4WoB3sJxBlsYq4lGqkesW?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/16pNyRBWCbggWbSGolFMyESxvVi3UnUmr?usp=drive_link",
-      },
-      prt: {
-        pengurusan: "https://drive.google.com/drive/folders/1oMNIBSvSA4G_9aVRffcaNPbq0wN-9Skd?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/17pArf7jJ6BxYyJ97NvjghdGvIMKE1TH7?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1RV129OOnUsf78HfOeDVvoF3B9ZfB_SBj?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1sGPfZOh5lwYP4Nmh6PVOuv0f2g8KntbB?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1iPRoPJthj7stdKPOaWpS_SW6PNR1K94X?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1H-ka9gQdyRWjq0D3_WawHsxhDjvd3Ede?usp=drive_link",
-      },
-      per: {
-        pengurusan: "https://drive.google.com/drive/folders/1nrJaevWG1vQwrj9O0-2Lod2POwDp9MG2?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1o0sjwn_JWz2vjiQO1jy7CDSHZURQhcvg?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1D0fAozAO1y5AViyskuSj_drGFjUpQAaf?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1mIavIjJHfWH4sBohUcfBJ41LBJV3qviz?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1cL1KTh4v6lt1KCeR3RLdeBInB61rBD3E?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1pQKxckJ0EF5BU338mbNzeBfDXnkzyIKk?usp=drive_link",
-      },
-      eko: {
-        pengurusan: "https://drive.google.com/drive/folders/15a4j0XLrNB7jKQEjEPoZ-aBIrRpPMW8v?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1Xr7XP0FFg6ofmt-6whLZ__Yhj7WqD8pr?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1TdQ8pM43ZvAAKvEMcRD-jqxsZr4jKRqI?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1rHBdMODnpqIdnA6Au2XDC2RNDp45Q30b?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1hhlUK1T0yxwSa-o44Yf1kx_LrnKJrVe9?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1FZLV9t4trHAW7d9UlSG7aK0DNxY-rAFd?usp=drive_link",
-      },
-      ak: {
-        pengurusan: "https://drive.google.com/drive/folders/1Qgb9chYHZsHS4DLQJq6iycF1xRaNG93m?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1671Y09-A6SBSeChkGT6Egq1srVvrtHHe?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/17iKpnjhhhpXLy9hgWLVonVnIzti-MzXX?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/15c-wySf5MjmP70PndJjJjnzZ9QpsU6eH?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1V3ZGoPitTFJrx_NydqkD1eAaz7N2SHJ4?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1VLIuebq2RRxmsbPSG0avRZKloBh-6e8Q?usp=drive_link",
-      },
-      kdp: {
-        pengurusan: "https://drive.google.com/drive/folders/1lC38AB3IPs7q62g5kubqLDe_qqsFIAWs?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1M5QqjexIOOTBdenkwUqaBJretaGYJHed?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1WW1xhJ6ieXempqFPCA1wvvjASFg4ni9V?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/1tP6cLsktVenCuz-W3JhdFOZ7abdomjHT?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1s--f45yr4qwVIQ2Mqo9YvmLNs1iD8DgZ?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1he5kMSEk0WXs4wUXjAzB0iKfGSacNbrh?usp=drive_link",
-      },
-      ldn: {
-        pengurusan: "https://drive.google.com/drive/folders/1hgegolySyLJLf1fpVIA4PRgjaT4KcVY4?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1HdTE7kDGkaxnEkq-A274YJIMZ66Wpy3Y?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/17VXQGhLokFqp5eRmJLCQmsgZtZLjLIrT?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/15WOVVRA_zUiXtSMqvw252ocxpLe5l4I3?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/1gJaRQF_g4ua-Hpm-w2cAGvqPDs6xhD4n?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/14-v_YHvcPhafXS71rWHxv0a9LUvmKo8F?usp=drive_link",
-      },
-      rbt: {
-        pengurusan: "https://drive.google.com/drive/folders/11TZNYnBXLa192tT3lcpoosVggZ3qOMyL?usp=drive_link",
-        pekeliling: "https://drive.google.com/drive/folders/1XWPsFmg5iNTW18mDgll-nIIUoA_47MK_?usp=drive_link",
-        mesyuarat: "https://drive.google.com/drive/folders/1ahR7br4b3ttcvuTCJkwAeiQFOJggvmGZ?usp=drive_link",
-        pentaksiran: "https://drive.google.com/drive/folders/14tlHFpWc_cYCvHCq8mTtTF54nOEYsC4P?usp=drive_link",
-        perancangan: "https://drive.google.com/drive/folders/171pm2x3EYAyixXr3g2HTuenl8cz4k0Yr?usp=drive_link",
-        kewangan: "https://drive.google.com/drive/folders/1rOWshS-ZmWmbSZElL7t5bZ3ZtQsnC9q2?usp=drive_link",
-      },
-    };
-    
-    const badgeText = document.getElementById("badgeText");
-    const dashTitle = document.getElementById("dashTitle");
-    const toast = document.getElementById("toast");
+function updateDriveBtn(){
+  const url=LINKS?.[curSubject]?.[curModule];
+  document.getElementById("openDriveBtn").classList.toggle("no-link",!url);
+}
+function openDrive(){
+  const url=LINKS?.[curSubject]?.[curModule];
+  if(!url){showToast("No Drive link configured for this module");return;}
+  window.open(url,"_blank","noopener");
+}
 
-    let toastTimer = null;
+// Files
+function fileKey(){return curSubject+"_"+curModule;}
+function getFiles(){return localFiles[fileKey()]||[];}
 
-    function showToast(msg){
-      if (!toast) return;
-      toast.textContent = msg;
-      toast.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.remove("show"), 900);
-    }
+function renderFiles(){
+  const search=(document.getElementById("fileSearch").value||"").toLowerCase();
+  let files=getFiles().filter(f=>!search||f.name.toLowerCase().includes(search));
+  files=[...files].sort((a,b)=>{
+    const va=a[sortKey]||"",vb=b[sortKey]||"";
+    return sortAsc?va.localeCompare(vb):vb.localeCompare(va);
+  });
+  const tbody=document.getElementById("fileBody");
+  document.getElementById("masterCb").checked=files.length>0&&files.every(f=>selected.has(f.id));
+  document.getElementById("statusCount").textContent=files.length+" file"+(files.length!==1?"s":"");
+  updateStatus();
+  if(!files.length){
+    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-ico">📭</div><div class="empty-title">No files yet</div><div class="empty-sub">Upload files using the button above, or click "Open in Drive" to manage files directly in Google Drive.</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML=files.map(f=>{
+    const ext=f.type||"";
+    const extCls=EXT_CLASS[ext]||"ext-default";
+    const ico=EXT_ICONS[ext]||"📄";
+    const isSel=selected.has(f.id);
+    return `<tr class="${isSel?"selected":""}" id="frow${f.id}">
+      <td><input class="f-check" type="checkbox" ${isSel?"checked":""} onchange="toggleRow(${f.id},this)" onclick="event.stopPropagation()"></td>
+      <td><span class="f-ico">${ico}</span></td>
+      <td><span class="f-name" onclick="openFile(${f.id})">${f.name}</span>${f.isNew?'<span class="f-new">NEW</span>':''}${f.pending?'<span class="pending-badge">PENDING SYNC</span>':''}</td>
+      <td><span class="f-ext ${extCls}">${ext||"—"}</span></td>
+      <td style="color:var(--text-2)">${f.size||"—"}</td>
+      <td style="color:var(--text-2)">${f.by||"—"}</td>
+      <td style="color:var(--text-3)">${f.date||"—"}</td>
+      <td><div class="row-actions">
+        <button class="row-btn" onclick="event.stopPropagation();openFile(${f.id})">Open ↗</button>
+        <button class="row-btn" onclick="event.stopPropagation();deleteOne(${f.id})">Delete</button>
+      </div></td>
+    </tr>`;
+  }).join("");
+}
 
-    function setSelectedSubjectUI(key){
-      document.querySelectorAll('.pill[data-subject]').forEach(a => {
-        a.classList.remove("isActive");
-      });
-      const active = document.querySelector(`.pill[data-subject="${key}"]`);
-      if (active) active.classList.add("isActive");
-    }
+function openFile(id){
+  const f=getFiles().find(x=>x.id===id);
+  if(!f)return;
+  if(f.driveUrl){window.open(f.driveUrl,"_blank","noopener");return;}
+  // fallback: open the module's Drive folder
+  const url=LINKS?.[curSubject]?.[curModule];
+  if(url){window.open(url,"_blank","noopener");}
+  else showToast("Sign in to open files directly");
+}
 
-    function setSubject(key){
-      currentSubject = key;
-      const label = SUBJECT_LABEL[key] || key;
-      badgeText.textContent = label;
-      dashTitle.textContent = "Schools Dashboard";
-      setSelectedSubjectUI(key);
-      showToast("Selected: " + label);
-    }
+function sortBy(key){
+  if(sortKey===key)sortAsc=!sortAsc;else{sortKey=key;sortAsc=true;}
+  document.getElementById("sort-name").textContent=sortKey==="name"?(sortAsc?"↑":"↓"):"↕";
+  document.getElementById("sort-date").textContent=sortKey==="date"?(sortAsc?"↑":"↓"):"";
+  document.getElementById("th-name").classList.toggle("sorted",sortKey==="name");
+  document.getElementById("th-date").classList.toggle("sorted",sortKey==="date");
+  renderFiles();
+}
+function sortFiles(){sortBy("name");}
 
-    // LEFT: choose subject
-    document.querySelectorAll('.pill[data-subject]').forEach(a => {
-      a.addEventListener("click", (e) => {
-        e.preventDefault();
-        const key = a.getAttribute("data-subject");
-        if (!key) return;
-        setSubject(key);
-      });
-    });
+function toggleRow(id,cb){
+  cb.checked?selected.add(id):selected.delete(id);
+  const row=document.getElementById("frow"+id);
+  if(row)row.classList.toggle("selected",cb.checked);
+  updateDeleteBtn();updateStatus();
+}
+function toggleAll(masterCb){
+  getFiles().forEach(f=>masterCb.checked?selected.add(f.id):selected.delete(f.id));
+  updateDeleteBtn();renderFiles();
+}
+function toggleSelectAll(){
+  const files=getFiles();
+  const allSel=files.length&&files.every(f=>selected.has(f.id));
+  files.forEach(f=>allSel?selected.delete(f.id):selected.add(f.id));
+  updateDeleteBtn();renderFiles();
+}
+function updateDeleteBtn(){
+  document.getElementById("deleteBtn").style.display=selected.size?"flex":"none";
+  document.getElementById("selCount").textContent=selected.size;
+}
+function updateStatus(){
+  document.getElementById("statusSel").textContent=selected.size?selected.size+" selected":"0 selected";
+  const label=SUBJECT_LABEL[curSubject]||curSubject;
+  const modEl=document.querySelector(".m-tab.active");
+  const modLabel=modEl?modEl.textContent.trim().replace(/^\S+\s/,""):curModule;
+  document.getElementById("statusPath").textContent=label+" › "+modLabel;
+}
 
-    // default highlight only (do NOT auto-open any bidang)
-    setSubject(currentSubject);
-    // all bidang already set to closed by: bidangBoxes.forEach(box => setMaxHeight(box, false));
+function handleUpload(input){
+  if(!input.files.length)return;
+  const today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});
+  const key=fileKey();
+  if(!localFiles[key])localFiles[key]=[];
+  const count=input.files.length;
+  Array.from(input.files).forEach(f=>{
+    const ext=f.name.split(".").pop().toUpperCase();
+    const kb=f.size<1048576?Math.round(f.size/1024)+" KB":(f.size/1048576).toFixed(1)+" MB";
+    localFiles[key].push({id:nextId++,name:f.name,type:ext,size:kb,by:loggedUser.name,date:today,isNew:true,pending:!isLoggedIn,driveUrl:null});
+  });
+  input.value="";renderFiles();
+  if(isLoggedIn)showToast(count+" file"+(count>1?"s":"")+" uploaded ✓");
+  else showToast(count+" file"+(count>1?"s":"")+" queued — sign in to sync to Drive");
+}
 
+function handleDelete(){
+  if(!selected.size)return;
+  if(!confirm("Delete "+selected.size+" file"+(selected.size>1?"s":"")+"?"))return;
+  const key=fileKey();
+  localFiles[key]=(localFiles[key]||[]).filter(f=>!selected.has(f.id));
+  selected.clear();updateDeleteBtn();renderFiles();showToast("Deleted");
+}
+function deleteOne(id){
+  if(!confirm("Delete this file?"))return;
+  const key=fileKey();
+  localFiles[key]=(localFiles[key]||[]).filter(f=>f.id!==id);
+  selected.delete(id);updateDeleteBtn();renderFiles();showToast("Deleted");
+}
 
-    // RIGHT: open module link based on currentSubject
-    document.querySelectorAll(".pCard[data-module]").forEach(card => {
-      card.addEventListener("click", () => {
-        const mod = card.getAttribute("data-module");
-        const url = LINKS?.[currentSubject]?.[mod];
+let tt;
+function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2400);}
 
-        if (!url){
-          showToast("No link set for: " + (SUBJECT_LABEL[currentSubject] || currentSubject));
-          return;
-        }
-
-        window.open(url, "DRIVE_PORTAL", "noopener");
-      });
-    });
-  </script>
-</body>
-</html>
+// Init
+renderSidebar();
+selectSubject("bm");
+document.querySelector('.m-tab[data-mod="pengurusan"]').click();
+</script></body></html>
