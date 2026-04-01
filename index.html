@@ -9,6 +9,8 @@
   <style>
     :root{
       --navH: 60px;
+      --tickerH: 34px;
+      --topH: 94px; /* navH + tickerH */
       --ease: cubic-bezier(.2,.8,.2,1);
       --ease2: cubic-bezier(.16,1,.3,1);
       --dur: 560ms;
@@ -109,6 +111,48 @@
       background-image: radial-gradient(circle, var(--gridLine) 1px, transparent 1px);
       background-size: 30px 30px;
       opacity: 0.6;
+    }
+
+    /* ─── TICKER ──────────────────────────────────────────── */
+    .ticker-wrap{
+      position: fixed; top: var(--navH); left: 0; right: 0; z-index: 90;
+      height: 34px; overflow: hidden;
+      background: var(--navBg);
+      border-bottom: 1px solid var(--navBorder);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex; align-items: center;
+    }
+    .ticker-track{
+      display: flex; align-items: center; gap: 0;
+      white-space: nowrap;
+      animation: ticker-scroll 36s linear infinite;
+      will-change: transform;
+    }
+    .ticker-wrap:hover .ticker-track{ animation-play-state: paused; }
+    @keyframes ticker-scroll{
+      0%  { transform: translateX(0); }
+      100%{ transform: translateX(-50%); }
+    }
+    .ticker-item{
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0 28px; font-size: 12px;
+      color: var(--muted); font-family: 'Geist Mono', monospace;
+      letter-spacing: 0.02em;
+    }
+    .ticker-item .ti-icon{
+      font-size: 12px; flex-shrink: 0;
+    }
+    .ticker-item .ti-label{
+      color: var(--muted2); font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.1em; margin-right: 2px;
+    }
+    .ticker-item .ti-value{
+      color: var(--text); font-weight: 500;
+    }
+    .ticker-divider{
+      display: inline-block; width: 1px; height: 12px;
+      background: var(--border-strong); flex-shrink: 0;
     }
 
     /* ─── TOP NAV ─────────────────────────────────────────── */
@@ -256,8 +300,8 @@
 
     /* ─── SECTION 1: HERO / SLIDER ────────────────────────── */
     .section-1 { height: 100vh; position: relative; }
-    .viewport{ position: relative; height: 100%; padding-top: var(--navH); overflow:hidden; }
-    .track{ height: calc(100% - var(--navH)); display:flex; transition: transform var(--dur) var(--ease2); }
+    .viewport{ position: relative; height: 100%; padding-top: var(--topH); overflow:hidden; }
+    .track{ height: calc(100% - var(--topH)); display:flex; transition: transform var(--dur) var(--ease2); }
     .slide{ width: 100vw; height: 100%; flex: 0 0 100%; position: relative; overflow:hidden; }
     .img{ position:absolute; inset:0; background-size: cover; background-position: center; transition: transform 1000ms var(--ease2); }
     .slide.active .img{ animation: zoom 18s linear forwards; }
@@ -476,6 +520,11 @@
 <body>
   <div class="bg"><div class="grid"></div><div class="dots"></div></div>
   <div class="pageTrans" id="pageTrans"></div>
+
+  <!-- TICKER BAR -->
+  <div class="ticker-wrap" id="tickerWrap">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
 
   <!-- TOP NAV -->
   <header class="topbar">
@@ -790,6 +839,43 @@
         setTimeout(() => { window.location.href = a.href; }, 520);
       };
     });
+
+    // ── Ticker ──────────────────────────────────────────────
+    const DEFAULT_TICKER = [
+      { icon: "👥", label: "Pelajar", value: "1,204" },
+      { icon: "📢", label: "Pengumuman", value: "Mesyuarat Panitia — 8 April 2026" },
+      { icon: "⭐", label: "GPS", value: "3.20" },
+      { icon: "🏅", label: "Aktiviti", value: "Sukan Daerah Keningau — 12 April" },
+      { icon: "📊", label: "GPMP", value: "Sasaran 2.95 — TOV 3.20" },
+      { icon: "🎓", label: "SPM", value: "100% Gred A — Matematik Tambahan" }
+    ];
+
+    function buildTicker(items){
+      const tickerTrack = document.getElementById('tickerTrack');
+      if(!tickerTrack) return;
+      // Duplicate for seamless loop
+      const html = [...items, ...items].map((it, i) => `
+        <span class="ticker-item">
+          <span class="ti-icon">${it.icon}</span>
+          <span class="ti-label">${it.label}</span>
+          <span class="ti-value">${it.value}</span>
+        </span>
+        ${i < items.length * 2 - 1 ? '<span class="ticker-divider"></span>' : ''}
+      `).join('');
+      tickerTrack.innerHTML = html;
+      // Adjust animation duration based on item count
+      const dur = Math.max(24, items.length * 6);
+      tickerTrack.style.animationDuration = dur + 's';
+    }
+
+    function loadTicker(){
+      try {
+        const saved = localStorage.getItem('smkg_ticker');
+        return saved ? JSON.parse(saved) : DEFAULT_TICKER;
+      } catch(e){ return DEFAULT_TICKER; }
+    }
+
+    buildTicker(loadTicker());
 
     renderSlider();
   </script>
