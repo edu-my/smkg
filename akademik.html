@@ -596,8 +596,31 @@
     }
     .page-trans.run{ transform:translateY(0); pointer-events:auto; }
 
-    /* responsive */
-    @media(max-width:860px){
+    /* ── Drag-to-reorder ────────────────────────────────────── */
+    .bidang-list{ user-select:none; }
+
+    .drag-handle{
+      width:20px; height:20px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      cursor:grab; border-radius:4px; color:var(--muted2);
+      font-size:12px; transition:color .15s, background .15s;
+      margin-right:2px;
+    }
+    .drag-handle:hover{ color:var(--muted); background:var(--surface-hover); }
+    .drag-handle:active{ cursor:grabbing; }
+
+    .bidang[draggable="true"]{ transition:opacity .2s; }
+    .bidang.dragging{ opacity:.35; }
+    .bidang.drag-over-above{ box-shadow:0 -2px 0 var(--accent); }
+    .bidang.drag-over-below{ box-shadow:0 2px 0 var(--accent); }
+
+    /* tiny "drag to reorder" hint in left-top */
+    .sort-hint{
+      display:flex; align-items:center; gap:5px;
+      font-size:10px; color:var(--muted2); font-family:'Geist Mono',monospace;
+      letter-spacing:.04em; margin-top:8px;
+    }
+    .sort-hint-dot{ width:5px; height:5px; border-radius:50%; background:var(--muted2); }
       :root{ --leftW:240px; }
       .module-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
@@ -687,6 +710,7 @@
           <span class="search-ico">🔍</span>
           <input class="search-input" id="searchInput" type="text" placeholder="Cari mata pelajaran…" autocomplete="off" />
         </div>
+        <div class="sort-hint"><span class="sort-hint-dot"></span>Seret ⠿ untuk susun semula</div>
       </div>
 
       <div class="bidang-list" id="bidangList">
@@ -695,6 +719,7 @@
         <div class="bidang" data-bidang="bahasa">
           <button class="bhead" type="button">
             <div class="bhead-left">
+              <div class="drag-handle" aria-label="Seret untuk susun semula">⠿</div>
               <div class="bicon lang">🗣</div>
               <span class="bhead-label">Bidang Bahasa</span>
             </div>
@@ -718,6 +743,7 @@
         <div class="bidang" data-bidang="sains">
           <button class="bhead" type="button">
             <div class="bhead-left">
+              <div class="drag-handle" aria-label="Seret untuk susun semula">⠿</div>
               <div class="bicon sains">🔬</div>
               <span class="bhead-label">Sains Matematik</span>
             </div>
@@ -742,6 +768,7 @@
         <div class="bidang" data-bidang="sosial">
           <button class="bhead" type="button">
             <div class="bhead-left">
+              <div class="drag-handle" aria-label="Seret untuk susun semula">⠿</div>
               <div class="bicon sosial">🌐</div>
               <span class="bhead-label">Sains Sosial</span>
             </div>
@@ -767,6 +794,7 @@
         <div class="bidang" data-bidang="tvet">
           <button class="bhead" type="button">
             <div class="bhead-left">
+              <div class="drag-handle" aria-label="Seret untuk susun semula">⠿</div>
               <div class="bicon tvet">⚙</div>
               <span class="bhead-label">TVET</span>
             </div>
@@ -792,6 +820,7 @@
         <div class="bidang" data-bidang="pp">
           <button class="bhead" type="button" id="ppBidangBtn">
             <div class="bhead-left">
+              <div class="drag-handle" aria-label="Seret untuk susun semula">⠿</div>
               <div class="bicon pp">🌅</div>
               <span class="bhead-label">Perdana Petang</span>
             </div>
@@ -1142,6 +1171,139 @@
         if(willOpen) setOpen(true);
       });
     });
+
+    /* ── Drag-to-reorder bidang cards ───────────────────────── */
+    const SORT_KEY = 'smkg_bidang_order';
+    const bidangList = document.getElementById('bidangList');
+
+    // Save current DOM order to localStorage
+    function saveOrder(){
+      const order = [...bidangList.querySelectorAll('.bidang')].map(b => b.dataset.bidang);
+      localStorage.setItem(SORT_KEY, JSON.stringify(order));
+    }
+
+    // On load: restore saved order
+    (function restoreOrder(){
+      try {
+        const saved = JSON.parse(localStorage.getItem(SORT_KEY) || 'null');
+        if(!saved || !Array.isArray(saved)) return;
+        saved.forEach(id => {
+          const el = bidangList.querySelector(`.bidang[data-bidang="${id}"]`);
+          if(el) bidangList.appendChild(el); // moves to end in saved sequence
+        });
+      } catch(e){}
+    })();
+
+    // Drag state
+    let dragEl = null;
+
+    // Attach drag events to every bidang
+    function initDrag(box){
+      const handle = box.querySelector('.drag-handle');
+
+      // Make the whole card draggable only when mousedown/touchstart on handle
+      handle.addEventListener('mousedown', () => { box.setAttribute('draggable', 'true'); });
+      handle.addEventListener('touchstart', () => { box.setAttribute('draggable', 'true'); }, {passive:true});
+      // Remove draggable on mouse/touch up anywhere so normal clicks still work
+      document.addEventListener('mouseup', () => {
+        document.querySelectorAll('.bidang[draggable]').forEach(b => b.removeAttribute('draggable'));
+      });
+
+      box.addEventListener('dragstart', e => {
+        dragEl = box;
+        box.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', box.dataset.bidang);
+      });
+
+      box.addEventListener('dragend', () => {
+        box.classList.remove('dragging');
+        document.querySelectorAll('.bidang').forEach(b => {
+          b.classList.remove('drag-over-above', 'drag-over-below');
+        });
+        dragEl = null;
+        saveOrder();
+      });
+
+      box.addEventListener('dragover', e => {
+        e.preventDefault();
+        if(!dragEl || dragEl === box) return;
+        e.dataTransfer.dropEffect = 'move';
+        const rect = box.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        box.classList.remove('drag-over-above', 'drag-over-below');
+        box.classList.add(e.clientY < mid ? 'drag-over-above' : 'drag-over-below');
+      });
+
+      box.addEventListener('dragleave', () => {
+        box.classList.remove('drag-over-above', 'drag-over-below');
+      });
+
+      box.addEventListener('drop', e => {
+        e.preventDefault();
+        if(!dragEl || dragEl === box) return;
+        box.classList.remove('drag-over-above', 'drag-over-below');
+        const rect = box.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        if(e.clientY < mid){
+          bidangList.insertBefore(dragEl, box);
+        } else {
+          bidangList.insertBefore(dragEl, box.nextSibling);
+        }
+      });
+
+      // Touch drag (mobile)
+      let touchStartY = 0;
+      let touchClone = null;
+      handle.addEventListener('touchstart', e => {
+        touchStartY = e.touches[0].clientY;
+        dragEl = box;
+        // Create a floating clone for visual feedback
+        touchClone = box.cloneNode(true);
+        touchClone.style.cssText = `
+          position:fixed; left:${box.getBoundingClientRect().left}px; top:${box.getBoundingClientRect().top}px;
+          width:${box.offsetWidth}px; opacity:.7; pointer-events:none; z-index:300;
+          border-radius:var(--radius); box-shadow:0 12px 36px rgba(0,0,0,.35);
+        `;
+        document.body.appendChild(touchClone);
+        box.classList.add('dragging');
+      }, {passive:true});
+
+      handle.addEventListener('touchmove', e => {
+        if(!dragEl || !touchClone) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const dy = touch.clientY - touchStartY;
+        touchClone.style.top = (box.getBoundingClientRect().top + dy) + 'px';
+
+        // Find target bidang under touch point
+        document.querySelectorAll('.bidang').forEach(b => b.classList.remove('drag-over-above','drag-over-below'));
+        const els = document.elementsFromPoint(touch.clientX, touch.clientY);
+        const target = els.find(el => el.classList.contains('bidang') && el !== dragEl);
+        if(target){
+          const rect = target.getBoundingClientRect();
+          target.classList.add(touch.clientY < rect.top + rect.height/2 ? 'drag-over-above' : 'drag-over-below');
+        }
+      }, {passive:false});
+
+      handle.addEventListener('touchend', e => {
+        if(!dragEl) return;
+        if(touchClone){ touchClone.remove(); touchClone = null; }
+        dragEl.classList.remove('dragging');
+        document.querySelectorAll('.bidang').forEach(b => {
+          const above = b.classList.contains('drag-over-above');
+          const below = b.classList.contains('drag-over-below');
+          b.classList.remove('drag-over-above','drag-over-below');
+          if(b === dragEl) return;
+          if(above) bidangList.insertBefore(dragEl, b);
+          else if(below) bidangList.insertBefore(dragEl, b.nextSibling);
+        });
+        dragEl = null;
+        saveOrder();
+      });
+    }
+
+    document.querySelectorAll('.bidang').forEach(initDrag);
 
     /* ── Subject selection ──────────────────────────────── */
     let currentSubject = 'bm';
