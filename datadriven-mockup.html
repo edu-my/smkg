@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ms" data-theme="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Data Driven Mockup — SMKG</title>
+<style>
+:root{
+  --accent:#9b72f5;--accent-dim:rgba(155,114,245,.13);--accent-hi:rgba(155,114,245,.26);
+  --bg-app:#08090d;--bg-panel:#0f1117;--bg-topbar:#0c0d12;--bg-sidebar:#0a0b0f;
+  --bg-hover:rgba(255,255,255,.055);--bg-sel:rgba(155,114,245,.15);
+  --bg-input:rgba(0,0,0,.4);--bg-card:rgba(255,255,255,.038);
+  --border:rgba(255,255,255,.09);--border-md:rgba(255,255,255,.14);
+  --text-1:rgba(255,255,255,.92);--text-2:rgba(255,255,255,.55);--text-3:rgba(255,255,255,.30);
+  --green:#4ec94e;--red:#e05555;--amber:#f5a623;--blue:#5b8df5;
+  --navH:40px;--sideW:210px;--r-sm:4px;--r-md:6px;
+}
+html[data-theme="light"]{
+  --bg-app:#f0f1f6;--bg-panel:#ffffff;--bg-topbar:#ffffff;--bg-sidebar:#f5f5f8;
+  --bg-hover:rgba(0,0,0,.045);--bg-sel:rgba(155,114,245,.11);--bg-input:rgba(0,0,0,.05);
+  --bg-card:rgba(0,0,0,.028);--border:rgba(0,0,0,.09);--border-md:rgba(0,0,0,.14);
+  --text-1:rgba(0,0,0,.88);--text-2:rgba(0,0,0,.50);--text-3:rgba(0,0,0,.28);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,system-ui,sans-serif;font-size:12px;background:var(--bg-app);color:var(--text-1)}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font:inherit;color:inherit}
+*{scrollbar-width:thin;scrollbar-color:var(--border-md) transparent}
+
+/* ── SHELL ── */
+.app{display:grid;grid-template-rows:var(--navH) 1fr;grid-template-columns:var(--sideW) 1fr;height:100vh}
+
+/* ── TOPBAR ── */
+.topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;height:var(--navH);padding:0 12px;background:var(--bg-topbar);border-bottom:1px solid var(--border);z-index:100}
+.tb-left{display:flex;align-items:center;gap:8px}
+.tb-right{display:flex;align-items:center;gap:6px}
+.app-icon{width:22px;height:22px;border-radius:var(--r-sm);background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(155,114,245,.35),0 4px 14px rgba(155,114,245,.22)}
+.app-name{font-size:12px;font-weight:700}
+.app-sub{font-size:11px;color:var(--text-3)}
+.tb-div{width:1px;height:16px;background:var(--border)}
+.breadcrumb{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2)}
+.breadcrumb .sep{color:var(--text-3)}
+.bc-active{color:var(--text-1);font-weight:600}
+.tb-btn{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:var(--r-sm);font-size:11px;color:var(--text-2);border:1px solid transparent;transition:background .14s,color .14s;cursor:pointer}
+.tb-btn:hover{background:var(--bg-hover);color:var(--text-1)}
+
+/* ── SIDEBAR (simplified for mockup) ── */
+.sidebar{background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;padding:8px 0}
+.sb-mock-item{padding:7px 12px;font-size:11px;color:var(--text-2);cursor:pointer;border-radius:var(--r-sm);margin:0 4px;transition:background .1s}
+.sb-mock-item:hover{background:var(--bg-hover);color:var(--text-1)}
+.sb-mock-item.active{background:var(--bg-sel);color:var(--accent);font-weight:600}
+.sb-mock-group{padding:6px 8px 2px;font-size:9px;font-weight:800;color:var(--text-3);letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+
+/* ── MAIN ── */
+.main{display:flex;flex-direction:column;overflow:hidden;background:var(--bg-panel)}
+
+/* module tabs */
+.mod-tabs{display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--border);background:var(--bg-sidebar);flex-shrink:0;overflow-x:auto;gap:1px}
+.mod-tabs::-webkit-scrollbar{height:0}
+.m-tab{display:flex;align-items:center;gap:5px;padding:9px 11px;font-size:11px;color:var(--text-2);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;flex-shrink:0}
+.m-tab:hover{color:var(--text-1)}
+.m-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.m-tab.data-tab{color:var(--blue)}
+.m-tab.data-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+/* ── DATA DRIVEN PANEL ── */
+.dd-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+
+/* sub-header */
+.dd-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;gap:12px}
+.dd-title-block{}
+.dd-title{font-size:13px;font-weight:800;color:var(--text-1)}
+.dd-sub{font-size:10px;color:var(--text-3);margin-top:2px}
+.dd-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.act-btn{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-sm);font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-1);transition:background .14s}
+.act-btn:hover{background:var(--bg-card)}
+.act-btn.primary{background:var(--accent);color:#fff;border-color:transparent}
+.act-btn.primary:hover{opacity:.88}
+
+/* exam selector tabs */
+.exam-bar{display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.exam-bar::-webkit-scrollbar{height:0}
+.exam-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg-card);color:var(--text-2);transition:background .14s,color .14s,border-color .14s;white-space:nowrap;flex-shrink:0}
+.exam-pill:hover{background:var(--bg-hover);color:var(--text-1)}
+.exam-pill.active{background:var(--accent-dim);border-color:var(--accent-hi);color:var(--accent)}
+.exam-pill .ep-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ep-dot.green{background:var(--green)}
+.ep-dot.amber{background:var(--amber)}
+.ep-dot.blue{background:var(--blue)}
+.exam-add{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:99px;font-size:11px;cursor:pointer;border:1px dashed var(--border);color:var(--text-3);transition:color .14s,border-color .14s;flex-shrink:0}
+.exam-add:hover{color:var(--text-1);border-color:var(--border-md)}
+
+/* summary strip */
+.summary-strip{display:flex;align-items:center;gap:0;padding:0 14px;border-bottom:1px solid var(--border);flex-shrink:0;height:36px}
+.sum-item{display:flex;align-items:center;gap:6px;padding:0 14px;border-right:1px solid var(--border);font-size:11px;color:var(--text-2)}
+.sum-item:first-child{padding-left:0}
+.sum-item strong{color:var(--text-1);font-weight:700}
+.sum-item .tag{display:inline-flex;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:800}
+.tag-green{background:rgba(78,201,78,.14);color:var(--green)}
+.tag-amber{background:rgba(245,166,35,.14);color:var(--amber)}
+.tag-red{background:rgba(224,85,85,.14);color:var(--red)}
+
+/* toolbar for table */
+.tbl-toolbar{display:flex;align-items:center;gap:4px;padding:0 14px;height:34px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg-panel)}
+.tbl-spacer{flex:1}
+.tbl-search{display:flex;align-items:center;gap:5px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 8px;height:24px}
+.tbl-search input{background:none;border:none;outline:none;font-size:11px;color:var(--text-1);width:130px}
+.tbl-search input::placeholder{color:var(--text-3)}
+.tbl-btn{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:var(--r-sm);font-size:10px;color:var(--text-2);border:1px solid transparent;cursor:pointer;transition:background .12s,color .12s}
+.tbl-btn:hover{background:var(--bg-hover);color:var(--text-1)}
+.tbl-sep{width:1px;height:16px;background:var(--border);margin:0 2px}
+
+/* main table */
+.tbl-wrap{flex:1;overflow-y:auto;min-height:0}
+.tbl-wrap::-webkit-scrollbar{width:5px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:3px}
+table{width:100%;border-collapse:collapse}
+thead th{position:sticky;top:0;z-index:5;padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text-3);letter-spacing:.07em;text-transform:uppercase;background:var(--bg-panel);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--text-2)}
+thead th.sorted{color:var(--accent)}
+thead th.ans-col{text-align:center}
+tbody tr{transition:background .09s}
+tbody tr:hover td{background:var(--bg-hover)}
+tbody td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-1);vertical-align:middle}
+html[data-theme="light"] tbody td{border-bottom:1px solid rgba(0,0,0,.06)}
+tbody tr:last-child td{border-bottom:none}
+.ans-col{text-align:center}
+
+/* answer option cells */
+.opt-cell{display:flex;align-items:center;justify-content:center;gap:0}
+.opt-val{display:inline-flex;align-items:center;justify-content:center;width:36px;height:22px;border-radius:3px;font-size:11px;font-weight:700}
+.opt-correct{background:rgba(155,114,245,.18);color:var(--accent);border:1px solid var(--accent-hi)}
+.opt-plain{color:var(--text-2)}
+.opt-low{color:var(--red)}
+
+/* % correct pill */
+.pct-bar-wrap{display:flex;align-items:center;gap:8px}
+.pct-bar{height:4px;border-radius:2px;flex:1;background:var(--border);overflow:hidden;min-width:50px}
+.pct-fill{height:100%;border-radius:2px}
+.pct-fill.green{background:var(--green)}
+.pct-fill.amber{background:var(--amber)}
+.pct-fill.red-fill{background:var(--red)}
+.pct-label{font-size:11px;font-weight:700;min-width:30px;text-align:right}
+.pct-label.green{color:var(--green)}
+.pct-label.amber{color:var(--amber)}
+.pct-label.red-lbl{color:var(--red)}
+
+/* discrimination index */
+.disc-badge{display:inline-flex;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:800}
+.disc-good{background:rgba(78,201,78,.13);color:var(--green)}
+.disc-avg{background:rgba(245,166,35,.13);color:var(--amber)}
+.disc-poor{background:rgba(224,85,85,.13);color:var(--red)}
+
+/* diff badge */
+.diff-badge{display:inline-flex;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:800}
+.diff-easy{background:rgba(91,141,245,.12);color:var(--blue)}
+.diff-med{background:rgba(155,114,245,.12);color:var(--accent)}
+.diff-hard{background:rgba(224,85,85,.12);color:var(--red)}
+
+/* row flag */
+.flag-row td{background:rgba(224,85,85,.05)!important}
+.flag-row:hover td{background:rgba(224,85,85,.10)!important}
+
+/* status bar */
+.statusbar{display:flex;align-items:center;gap:10px;padding:0 12px;height:24px;border-top:1px solid var(--border);background:var(--bg-topbar);flex-shrink:0;font-size:10px;color:var(--text-3)}
+.s-dot{width:5px;height:5px;border-radius:50%;}
+.s-green{background:var(--green)}
+
+/* empty / loading */
+.empty-cell{text-align:center;padding:40px 20px;color:var(--text-3);font-size:12px}
+
+/* toast */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(6px);background:var(--bg-topbar);border:1px solid var(--border-md);color:var(--text-1);padding:7px 14px;border-radius:var(--r-md);font-size:11px;font-weight:600;z-index:999;pointer-events:none;opacity:0;transition:opacity .22s,transform .22s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* add row input */
+.add-row td{padding:5px 10px;background:var(--bg-card)}
+.add-row input,.add-row select{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 6px;font-size:11px;color:var(--text-1);outline:none;width:100%}
+.add-row input:focus,.add-row select:focus{border-color:var(--accent)}
+
+/* inline edit highlight */
+td[contenteditable="true"]:focus{outline:1px solid var(--accent);border-radius:2px;background:var(--accent-dim)}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<div class="app">
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="tb-left">
+      <div class="app-icon"><svg viewBox="0 0 16 16" fill="none" width="11" height="11"><path d="M8 1L15 5v6L8 15 1 11V5L8 1Z" fill="rgba(255,255,255,.95)"/></svg></div>
+      <span class="app-name">SMKG</span><span class="app-sub">/ Akademik</span>
+      <div class="tb-div"></div>
+      <div class="breadcrumb">
+        <span>Panel</span><span class="sep">›</span>
+        <span class="bc-active" id="bcSubj">Fizik</span>
+        <span class="sep">›</span>
+        <span class="bc-active">Data Driven</span>
+      </div>
+    </div>
+    <div class="tb-right">
+      <button class="tb-btn" id="themeBtn"><span id="themeLbl">Dark</span></button>
+      <div class="tb-div"></div>
+      <button class="tb-btn">← Back</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR (simplified) -->
+  <aside class="sidebar">
+    <div style="padding:7px 8px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <input style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 8px;font-size:11px;color:var(--text-1);outline:none" placeholder="Search subjects...">
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:4px 0">
+      <div class="sb-mock-group">Sains Matematik</div>
+      <div class="sb-mock-item active">Fizik</div>
+      <div class="sb-mock-item">Kimia</div>
+      <div class="sb-mock-item">Biologi</div>
+      <div class="sb-mock-item">Matematik</div>
+      <div class="sb-mock-item">Sains</div>
+      <div class="sb-mock-item">Mat. Tambahan</div>
+      <div class="sb-mock-group">Bidang Bahasa</div>
+      <div class="sb-mock-item">Bahasa Melayu</div>
+      <div class="sb-mock-item">Bahasa Inggeris</div>
+      <div class="sb-mock-group">TVET</div>
+      <div class="sb-mock-item">Pertanian</div>
+      <div class="sb-mock-item">Perniagaan</div>
+      <div class="sb-mock-item">Ekonomi</div>
+      <div class="sb-mock-item">Asas Kelestarian</div>
+      <div class="sb-mock-item">Katering & Penyajian</div>
+      <div class="sb-mock-item">Landskap & Nursery</div>
+      <div class="sb-mock-item">RBT</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- Module tabs -->
+    <div class="mod-tabs">
+      <div class="m-tab" onclick="showToast('Switching to Pengurusan Am...')">🏛️ Pengurusan Am</div>
+      <div class="m-tab" onclick="showToast('Switching to Pekeliling...')">📋 Pekeliling</div>
+      <div class="m-tab" onclick="showToast('Switching to Mesyuarat...')">📝 Minit Mesyuarat</div>
+      <div class="m-tab" onclick="showToast('Switching to Pentaksiran...')">📊 Pentaksiran</div>
+      <div class="m-tab" onclick="showToast('Switching to Perancangan...')">🗓️ Perancangan</div>
+      <div class="m-tab" onclick="showToast('Switching to Kewangan...')">💰 Kewangan</div>
+      <div class="m-tab data-tab active">📈 Data Driven</div>
+    </div>
+
+    <!-- DATA DRIVEN PANEL -->
+    <div class="dd-panel">
+
+      <!-- Header -->
+      <div class="dd-header">
+        <div class="dd-title-block">
+          <div class="dd-title">Analisis Item — <span id="ddSubjName">Fizik</span></div>
+          <div class="dd-sub">Sesi 2025/2026 · Pilih ujian di bawah untuk lihat atau edit data</div>
+        </div>
+        <div class="dd-actions">
+          <button class="act-btn" onclick="exportCSV()">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 2v7M3 6l3 3 3-3M2 10h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Export CSV
+          </button>
+          <select id="classSelect" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 8px;font-size:11px;color:var(--text-1);outline:none;cursor:pointer" onchange="showToast('Kelas: '+this.value)">
+            <option>Semua Kelas</option>
+            <option>4 Amanah</option>
+            <option>4 Bestari</option>
+            <option>5 Amanah</option>
+            <option>5 Bestari</option>
+          </select>
+          <button class="act-btn primary" onclick="addItemRow()">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Tambah Item
+          </button>
+        </div>
+      </div>
+
+      <!-- Exam selector -->
+      <div class="exam-bar">
+        <div class="exam-pill active" onclick="switchExam(this,'UB1')"><span class="ep-dot green"></span>Ujian Bulanan 1</div>
+        <div class="exam-pill" onclick="switchExam(this,'UB2')"><span class="ep-dot amber"></span>Ujian Bulanan 2</div>
+        <div class="exam-pill" onclick="switchExam(this,'PT3')"><span class="ep-dot blue"></span>Percubaan SPM</div>
+        <div class="exam-pill" onclick="switchExam(this,'SPM')"><span class="ep-dot green"></span>SPM 2024</div>
+        <div class="exam-add" onclick="addExam()">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Ujian baru
+        </div>
+      </div>
+
+      <!-- Summary strip -->
+      <div class="summary-strip">
+        <div class="sum-item"><strong id="sumTotal">40</strong>&nbsp;item</div>
+        <div class="sum-item">Purata&nbsp;<strong id="sumAvg">61.4%</strong></div>
+        <div class="sum-item"><span class="tag tag-green" id="sumGood">18 Baik</span></div>
+        <div class="sum-item"><span class="tag tag-amber" id="sumMid">14 Sederhana</span></div>
+        <div class="sum-item"><span class="tag tag-red" id="sumWeak">8 Lemah</span></div>
+        <div style="flex:1"></div>
+        <div class="sum-item" style="border-right:none">
+          <span style="font-size:10px;color:var(--text-3)">Exam:&nbsp;</span>
+          <strong id="sumExam">Ujian Bulanan 1</strong>
+        </div>
+      </div>
+
+      <!-- Table toolbar -->
+      <div class="tbl-toolbar">
+        <button class="tbl-btn" onclick="filterWeak()">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.2"/><path d="M6 4v2.5M6 8h.01" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Item Lemah sahaja
+        </button>
+        <button class="tbl-btn" onclick="clearFilter()">Papar Semua</button>
+        <div class="tbl-sep"></div>
+        <button class="tbl-btn" onclick="sortByPct()">Sort % ↕</button>
+        <div class="tbl-spacer"></div>
+        <div class="tbl-search">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style="color:var(--text-3)"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 8l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <input type="text" id="tableSearch" placeholder="Cari item..." oninput="searchItems(this.value)">
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="tbl-wrap">
+        <table id="mainTable">
+          <thead>
+            <tr>
+              <th style="width:36px">No.</th>
+              <th>Tajuk / Konstruk</th>
+              <th style="width:28px;text-align:center">K.U</th>
+              <th class="ans-col" style="width:44px">A</th>
+              <th class="ans-col" style="width:44px">B</th>
+              <th class="ans-col" style="width:44px">C</th>
+              <th class="ans-col" style="width:44px">D</th>
+              <th style="width:140px">% Betul</th>
+              <th style="width:68px">Diskriminasi</th>
+              <th style="width:68px">Kesukaran</th>
+              <th style="width:30px"></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Status bar -->
+    <div class="statusbar">
+      <div class="s-dot s-green"></div>
+      <span>Fizik · Ujian Bulanan 1 · 2025/2026</span>
+      <span>|</span>
+      <span id="rowCount">40 item</span>
+      <div style="flex:1"></div>
+      <span style="color:var(--text-3)">Klik sel untuk edit · Enter untuk simpan</span>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── Theme ──
+let theme = localStorage.getItem("smkg_theme") || "dark";
+function applyTheme(t) { document.documentElement.setAttribute("data-theme",t); document.getElementById("themeLbl").textContent=t==="light"?"Light":"Dark"; localStorage.setItem("smkg_theme",t); theme=t; }
+document.getElementById("themeBtn").onclick = () => applyTheme(theme==="light"?"dark":"light");
+applyTheme(theme);
+
+// ── Data ──
+// correct answer index: 0=A, 1=B, 2=C, 3=D
+// counts: how many students chose each option (out of 70 students)
+const KONSTRUK = ["Daya dan Gerakan","Tenaga","Gelombang","Elektrik","Haba","Cahaya","Keelektromagnetan","Daya Nuklear"];
+
+function makeItem(no) {
+  const correct = Math.floor(Math.random()*4);
+  const total = 70;
+  const pct = Math.round(35 + Math.random()*55); // 35%–90%
+  const correctCount = Math.round(total * pct/100);
+  const rest = total - correctCount;
+  const opts = [0,0,0,0];
+  opts[correct] = correctCount;
+  // distribute rest across wrong options
+  let rem = rest;
+  [0,1,2,3].filter(i=>i!==correct).forEach((i,idx,arr)=>{
+    if (idx===arr.length-1) opts[i]=rem;
+    else { const v=Math.floor(rem/(arr.length-idx)); opts[i]=v; rem-=v; }
+  });
+  const disc = Math.random();
+  const konstruk = KONSTRUK[Math.floor(Math.random()*KONSTRUK.length)];
+  const ku = Math.floor(Math.random()*4)+1; // kemahiran 1-4
+  return { no, konstruk, ku, opts, correct, pct, disc };
+}
+
+let allItems = Array.from({length:40},(_,i)=>makeItem(i+1));
+let showWeakOnly = false;
+let currentExam = "Ujian Bulanan 1";
+let nextId = 41;
+
+function pctClass(p){ return p>=70?"green":p>=50?"amber":"red-fill"; }
+function pctLblClass(p){ return p>=70?"green":p>=50?"amber":"red-lbl"; }
+function discLabel(d){ return d>=0.3?["Baik","good"]:d>=0.2?["Sederhana","avg"]:["Lemah","poor"]; }
+function diffLabel(p){ return p>=70?["Mudah","easy"]:p>=50?["Sederhana","med"]:["Sukar","hard"]; }
+const OPTS = ["A","B","C","D"];
+
+function renderTable(items) {
+  const tbody = document.getElementById("tableBody");
+  document.getElementById("rowCount").textContent = items.length+" item";
+  if (!items.length){
+    tbody.innerHTML=`<tr><td colspan="11" class="empty-cell">Tiada item sepadan</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = items.map(item => {
+    const [discTxt, discCls] = discLabel(item.disc);
+    const [diffTxt, diffCls] = diffLabel(item.pct);
+    const isWeak = item.pct < 50;
+    return `<tr class="${isWeak?"flag-row":""}" id="irow${item.no}">
+      <td style="color:var(--text-3);font-weight:700">${item.no}</td>
+      <td contenteditable="true" onblur="saveKonstruk(${item.no},this.textContent)" style="cursor:text;max-width:180px;overflow:hidden;text-overflow:ellipsis">${item.konstruk}</td>
+      <td style="text-align:center;color:var(--text-3)">${item.ku}</td>
+      ${OPTS.map((o,i)=>`
+        <td class="ans-col">
+          <span class="opt-val ${i===item.correct?"opt-correct":item.opts[i]<8?"opt-low":"opt-plain"}"
+                onclick="setCorrect(${item.no},${i})" title="Klik untuk tetapkan jawapan betul"
+                style="cursor:pointer">${item.opts[i]}</span>
+        </td>`).join("")}
+      <td>
+        <div class="pct-bar-wrap">
+          <div class="pct-bar"><div class="pct-fill ${pctClass(item.pct)}" style="width:${item.pct}%"></div></div>
+          <span class="pct-label ${pctLblClass(item.pct)}">${item.pct}%</span>
+        </div>
+      </td>
+      <td><span class="disc-badge disc-${discCls}">${discTxt}</span></td>
+      <td><span class="diff-badge diff-${diffCls}">${diffTxt}</span></td>
+      <td>
+        <button style="font-size:10px;color:var(--text-3);padding:2px 5px;border-radius:var(--r-sm);border:1px solid var(--border);background:none;cursor:pointer;transition:color .12s" onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='var(--text-3)'" onclick="deleteItem(${item.no})">✕</button>
+      </td>
+    </tr>`;
+  }).join("");
+  updateSummary(items);
+}
+
+function updateSummary(items){
+  const all = allItems; // always compute from full set
+  const good=all.filter(i=>i.pct>=70).length;
+  const mid=all.filter(i=>i.pct>=50&&i.pct<70).length;
+  const weak=all.filter(i=>i.pct<50).length;
+  const avg=(all.reduce((s,i)=>s+i.pct,0)/all.length).toFixed(1);
+  document.getElementById("sumTotal").textContent=all.length;
+  document.getElementById("sumAvg").textContent=avg+"%";
+  document.getElementById("sumGood").textContent=good+" Baik";
+  document.getElementById("sumMid").textContent=mid+" Sederhana";
+  document.getElementById("sumWeak").textContent=weak+" Lemah";
+  document.getElementById("sumExam").textContent=currentExam;
+}
+
+function getVisible(){
+  let items = showWeakOnly ? allItems.filter(i=>i.pct<50) : [...allItems];
+  const s = document.getElementById("tableSearch").value.toLowerCase();
+  if (s) items = items.filter(i=>i.konstruk.toLowerCase().includes(s)||String(i.no).includes(s));
+  return items;
+}
+
+function filterWeak(){ showWeakOnly=true; renderTable(getVisible()); showToast("Papar "+allItems.filter(i=>i.pct<50).length+" item lemah"); }
+function clearFilter(){ showWeakOnly=false; document.getElementById("tableSearch").value=""; renderTable(getVisible()); }
+function searchItems(v){ renderTable(getVisible()); }
+function sortByPct(){
+  const asc = allItems[0].pct <= allItems[allItems.length-1].pct;
+  allItems.sort((a,b)=>asc?b.pct-a.pct:a.pct-b.pct);
+  renderTable(getVisible());
+  showToast("Sort: % betul "+(asc?"tinggi→rendah":"rendah→tinggi"));
+}
+function setCorrect(no,idx){
+  const item=allItems.find(i=>i.no===no);
+  if(!item)return;
+  item.correct=idx;
+  // Recalculate pct based on new correct
+  const total=item.opts.reduce((s,v)=>s+v,0);
+  item.pct=Math.round(item.opts[idx]/total*100);
+  renderTable(getVisible());
+  showToast("Jawapan betul ditetapkan: "+["A","B","C","D"][idx]);
+}
+function saveKonstruk(no,txt){
+  const item=allItems.find(i=>i.no===no);
+  if(item)item.konstruk=txt.trim()||item.konstruk;
+}
+function deleteItem(no){
+  allItems=allItems.filter(i=>i.no!==no);
+  renderTable(getVisible());
+  showToast("Item "+no+" dipadam");
+}
+function addItemRow(){
+  const newItem=makeItem(nextId++);
+  newItem.konstruk="Konstruk baru — klik untuk edit";
+  allItems.push(newItem);
+  renderTable(getVisible());
+  // scroll to bottom
+  const wrap=document.querySelector(".tbl-wrap");
+  wrap.scrollTop=wrap.scrollHeight;
+  showToast("Item baru ditambah — klik konstruk untuk edit");
+}
+function switchExam(el,code){
+  document.querySelectorAll(".exam-pill").forEach(p=>p.classList.remove("active"));
+  el.classList.add("active");
+  currentExam=el.textContent.trim();
+  // Regenerate random data for demo
+  allItems=Array.from({length:Math.floor(30+Math.random()*20)},(_,i)=>makeItem(i+1));
+  nextId=allItems.length+1;
+  showWeakOnly=false;
+  document.getElementById("tableSearch").value="";
+  renderTable(getVisible());
+  showToast("Exam: "+currentExam);
+}
+function addExam(){
+  const name=prompt("Nama ujian baru:");
+  if(!name)return;
+  const pill=document.createElement("div");
+  pill.className="exam-pill";
+  pill.innerHTML=`<span class="ep-dot amber"></span>${name}`;
+  pill.onclick=()=>switchExam(pill,name);
+  document.querySelector(".exam-bar").insertBefore(pill,document.querySelector(".exam-add"));
+  switchExam(pill,name);
+}
+function exportCSV(){
+  const rows=[["No","Konstruk","KU","A","B","C","D","% Betul","Diskriminasi","Kesukaran"]];
+  allItems.forEach(i=>{
+    const [disc]=discLabel(i.disc);
+    const [diff]=diffLabel(i.pct);
+    rows.push([i.no,i.konstruk,i.ku,...i.opts,i.pct+"%",disc,diff]);
+  });
+  const csv=rows.map(r=>r.join(",")).join("\n");
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download=`Analisis_Item_${currentExam.replace(/\s/g,"_")}.csv`;
+  a.click();
+  showToast("CSV dimuat turun ✓");
+}
+
+let tt;
+function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2400);}
+
+// Init
+renderTable(getVisible());
+</script>
+</body>
+</html>
